@@ -1,0 +1,8 @@
+/* pending.css — Pending queue page specific styles
+   NOTE: .queue-card, .student-info, .card-actions, .status-badge-pending,
+         .btn-review, .tabs-container, .tab, .page-header, .empty-state-card
+         are all defined in global.css and shared across pages.
+   This file holds any pending-specific overrides only. */
+
+/* Currently the pending page shares all styles from global.css.
+   Add any pending-only tweaks below if needed in the future. */

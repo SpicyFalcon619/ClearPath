@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClearPath - Sign Up</title>
+    <link rel="stylesheet" href="global.css">
+    <link rel="stylesheet" href="login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="auth-wrapper">
+        <div class="brand auth-brand">
+            <div class="logo-icon"><i data-lucide="graduation-cap"></i></div>
+            <span class="brand-name">ClearPath</span>
+        </div>
+
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2>Welcome</h2>
+                <p class="subtitle">Create an account for university clearance</p>
+            </div>
+
+            <div class="auth-tabs">
+                <a href="login.html" class="auth-tab">Sign in</a>
+                <a href="signup.html" class="auth-tab active">Sign up</a>
+            </div>
+
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form" action="index.html">
+                <div class="form-group">
+                    <label>Full name</label>
+                    <input type="text" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" placeholder="">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" placeholder="">
+                </div>
+                <button type="submit" class="btn-primary auth-submit">Create account</button>
+            </form>
+
+            <!-- <p class="auth-footer-text">New accounts start as Students. Admin roles are assigned by Master Admin.</p> -->
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

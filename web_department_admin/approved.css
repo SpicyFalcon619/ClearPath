@@ -1,0 +1,22 @@
+/* approved.css — Approved queue page
+   Extends global.css for any approved-specific overrides.
+   Currently the page uses the shared empty-state-card from global.css,
+   so this file holds any future approved-specific styles and
+   the approved badge style override. */
+
+/* Approved status badge — green to distinguish from warning-orange */
+.status-badge-approved {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--success-border);
+}
+
+/* If approved list ever has items, reuse queue-card layout from global */
+/* (queue-card, student-info, card-actions are already in global.css) */

@@ -1,0 +1,305 @@
+/* Layout & Page Header */
+
+
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: var(--text-primary);
+}
+
+.back-link svg {
+    width: 16px;
+    height: 16px;
+}
+
+.student-title-section h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+}
+
+
+
+/* Main Details Card */
+.details-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Top Section Flex */
+.card-header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.course-info h2 {
+    font-size: 1.125rem;
+    margin-bottom: 0.25rem;
+}
+
+.timestamp {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+
+
+.btn-certificate {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: var(--cert-bg);
+    color: var(--cert-text);
+    border: 1px solid var(--cert-border);
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-certificate:hover {
+    background-color: #ffedd5;
+}
+
+.btn-certificate svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Departments Grid */
+.departments-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.dept-card {
+    background-color: var(--bg-card-inner);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+}
+
+.dept-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.dept-header h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.dept-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-action {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    background-color: var(--btn-action-bg);
+    border: 1px solid var(--btn-action-border);
+    color: var(--text-primary);
+    padding: 0.375rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-action:hover {
+    background-color: var(--btn-action-hover);
+}
+
+.btn-action svg {
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+}
+
+/* Reusable Section Styles */
+.section-container {
+    margin-bottom: 2rem;
+}
+
+.section-container:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+}
+
+/* Documents Row */
+.document-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background-color: var(--bg-card-inner);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.doc-name {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.doc-size {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.btn-view {
+    background-color: var(--btn-action-bg);
+    border: 1px solid var(--btn-action-border);
+    color: var(--text-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-view:hover {
+    background-color: var(--btn-action-hover);
+}
+
+/* Audit Trail */
+.audit-trail {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* The connecting line */
+.audit-trail::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    bottom: 20px;
+    left: 7px;
+    width: 2px;
+    background-color: var(--border-color);
+    z-index: 0;
+}
+
+.timeline-item {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    margin-top: 10px;
+    flex-shrink: 0;
+    background-color: var(--bg-card);
+    /* Matches card background to "cut out" the line */
+    border: 4px solid var(--bg-card);
+}
+
+.dot-gray {
+    background-color: var(--text-muted);
+}
+
+.dot-green {
+    background-color: var(--success-text);
+}
+
+.timeline-content {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+}
+
+.box-gray {
+    background-color: var(--bg-card-inner);
+    border: 1px solid var(--border-color);
+}
+
+.box-gray svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+}
+
+.box-gray .status-text {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.box-green {
+    background-color: var(--success-bg);
+    border: 1px solid var(--success-border);
+}
+
+.box-green svg {
+    width: 16px;
+    height: 16px;
+    color: var(--success-text);
+}
+
+.box-green .status-text {
+    color: var(--success-text);
+    font-weight: 500;
+}
+
+.time-text {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-left: auto;
+}

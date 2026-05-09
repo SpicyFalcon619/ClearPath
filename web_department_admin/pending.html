@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Department Queue - ClearPath</title>
+    <link rel="stylesheet" href="global.css">
+    <link rel="stylesheet" href="pending.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="brand">
+                <div class="logo-icon"><i data-lucide="graduation-cap"></i></div>
+                <span class="brand-name">ClearPath</span>
+            </div>
+            <nav class="nav-links">
+                <a href="pending.html" class="nav-link active"><i data-lucide="layout-grid"></i> Queue</a>
+            </nav>
+        </div>
+        <div class="nav-right">
+            <span class="user-email">admin@lab.com</span>
+            <button class="icon-btn" aria-label="Logout"><i data-lucide="log-out"></i></button>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <div>
+                <h1>Department Queue</h1>
+                <p class="subtitle">Review and act on clearance requests assigned to your department.</p>
+            </div>
+        </div>
+
+        <div class="tabs-container">
+            <a href="pending.html" class="tab active">Pending (1)</a>
+            <a href="approved.html" class="tab">Approved (0)</a>
+            <a href="denied.html" class="tab">Denied (0)</a>
+        </div>
+
+        <div class="queue-card">
+            <div class="student-info">
+                <h3>Student Test</h3>
+                <p>CSE · 242 · student@test.com</p>
+            </div>
+            <div class="card-actions">
+                <span class="status-badge-pending">Pending</span>
+                <a href="review.html" class="btn-review">Review</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

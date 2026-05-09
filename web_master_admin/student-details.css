@@ -214,7 +214,7 @@
 }
 
 /* The connecting line */
-.audit-trail::before {
+/* .audit-trail::before {
     content: '';
     position: absolute;
     top: 10px;
@@ -223,7 +223,7 @@
     width: 2px;
     background-color: var(--border-color);
     z-index: 0;
-}
+} */
 
 .timeline-item {
     display: flex;

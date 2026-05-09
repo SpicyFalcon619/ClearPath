@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Application - ClearPath</title>
+    <link rel="stylesheet" href="global.css">
+    <link rel="stylesheet" href="new-application.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="nav-left">
+            <div class="brand">
+                <div class="logo-icon"><i data-lucide="graduation-cap"></i></div>
+                <span class="brand-name">ClearPath</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="nav-link"><i data-lucide="layout-grid"></i> Dashboard</a>
+                <a href="#" class="nav-link active"><i data-lucide="file-text"></i> New Application</a>
+            </nav>
+        </div>
+        <div class="nav-right">
+            <button class="icon-btn" aria-label="Notifications"><i data-lucide="bell"></i></button>
+            <button class="icon-btn" aria-label="Dark Mode"><i data-lucide="moon"></i></button>
+            <span class="user-email">student@test.com</span>
+            <button class="icon-btn" aria-label="Logout"><i data-lucide="log-out"></i></button>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <div class="form-header">
+            <h1>New clearance application</h1>
+            <p class="subtitle">Provide your details and upload supporting documents.</p>
+        </div>
+
+        <form action="#" method="POST">
+            <!-- Course Details Section -->
+            <div class="form-section">
+                <h2 class="section-heading">Course details</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Course / Program</label>
+                        <input type="text" value="CSE">
+                    </div>
+                    <div class="form-group">
+                        <label>Batch / Trimester</label>
+                        <input type="text" value="242">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Reason for clearance (optional)</label>
+                    <textarea placeholder="Graduation, semester drop, transfer, etc."></textarea>
+                </div>
+            </div>
+
+            <!-- Supporting Documents Section -->
+            <div class="form-section">
+                <h2 class="section-heading" style="margin-bottom: 0.25rem;">Supporting documents</h2>
+                <p class="section-subtitle">PDF or JPG • max 5MB each</p>
+                
+                <div class="drop-zone">
+                    <i data-lucide="cloud-upload"></i>
+                    <span class="drop-zone-text">Drag & drop or click to upload</span>
+                    <span class="drop-zone-hint">PDF, JPG up to 5MB</span>
+                </div>
+            </div>
+
+            <!-- Emergency Request Section -->
+            <div class="form-section">
+                <div class="emergency-header">
+                    <i data-lucide="alert-triangle" class="emergency-icon" style="width: 20px; height: 20px;"></i>
+                    <h3 style="margin: 0;">Emergency request</h3>
+                </div>
+                <p class="subtitle" style="margin-top: 0.25rem;">Mark this application as urgent for prioritized review.</p>
+                
+                <div class="emergency-toggle-row">
+                    <span class="emergency-label">Mark as urgent</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Routed Departments Info -->
+            <div class="routed-info">
+                Departments routed: Examination, Finance, Hostel, Lab, Library, Sports
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+                <button type="button" class="btn-cancel">Cancel</button>
+                <button type="submit" class="btn-primary">Submit application</button>
+            </div>
+        </form>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

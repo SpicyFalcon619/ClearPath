@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
+
 <body>
 
     <header class="navbar">
@@ -19,7 +21,8 @@
             </div>
             <nav class="nav-links">
                 <a href="dashboard.html" class="nav-link"><i data-lucide="layout-grid"></i> Dashboard</a>
-                <a href="new-application.html" class="nav-link active"><i data-lucide="file-text"></i> New Application</a>
+                <a href="new-application.html" class="nav-link active"><i data-lucide="file-text"></i> New
+                    Application</a>
             </nav>
         </div>
         <div class="nav-right">
@@ -39,18 +42,18 @@
             <!-- Course Details Section -->
             <div class="form-section">
                 <h2 class="section-heading">Course details</h2>
-                
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Course / Program</label>
-                        <input type="text" value="CSE">
+                        <input type="text" placeholder="CSE/BBA/EEE etc.">
                     </div>
                     <div class="form-group">
                         <label>Batch / Trimester</label>
-                        <input type="text" value="242">
+                        <input type="text" placeholder="241/242/243 etc.">
                     </div>
                 </div>
-                
+
                 <div class="form-group">
                     <label>Reason for clearance (optional)</label>
                     <textarea placeholder="Graduation, semester drop, transfer, etc."></textarea>
@@ -61,7 +64,7 @@
             <div class="form-section">
                 <h2 class="section-heading">Supporting documents</h2>
                 <p class="section-subtitle">PDF or JPG • max 5MB each</p>
-                
+
                 <div class="drop-zone">
                     <i data-lucide="cloud-upload"></i>
                     <span class="drop-zone-text">Drag & drop or click to upload</span>
@@ -75,8 +78,9 @@
                     <i data-lucide="alert-triangle" class="emergency-icon" style="width: 20px; height: 20px;"></i>
                     <h3 style="margin: 0;">Emergency request</h3>
                 </div>
-                <p class="subtitle" style="margin-top: 0.25rem;">Mark this application as urgent for prioritized review.</p>
-                
+                <p class="subtitle" style="margin-top: 0.25rem;">Mark this application as urgent for prioritized review.
+                </p>
+
                 <div class="emergency-toggle-row">
                     <span class="emergency-label">Mark as urgent</span>
                     <label class="toggle-switch">
@@ -104,4 +108,5 @@
         lucide.createIcons();
     </script>
 </body>
+
 </html>

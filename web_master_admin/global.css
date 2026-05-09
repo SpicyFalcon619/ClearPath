@@ -1,27 +1,26 @@
-/* Global Variables */
 :root {
-    /* Backgrounds */
-    --bg-main: #f9fafb;       /* Light gray background */
-    --bg-surface: #ffffff;    /* White cards/navbar */
+    
+    --bg-main: #f9fafb;       
+    --bg-surface: #ffffff;    
     --bg-card: #ffffff;
     --bg-card-inner: #f9fafb;
     
-    /* Text Colors */
-    --text-primary: #111827;  /* Near black */
-    --text-secondary: #6b7280;/* Medium gray */
-    --text-muted: #9ca3af;    /* Light gray */
     
-    /* Brand Colors */
-    --brand-primary: #f97316; /* Orange */
+    --text-primary: #111827;  
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;    
+    
+    
+    --brand-primary: #f97316; 
     --brand-primary-hover: #ea580c;
     --brand-hover: #ea580c;
     --brand-light: #fff7ed;
     --disabled-orange: #fdba74; 
     
-    /* Borders */
-    --border-color: #e5e7eb;  /* Light gray borders */
     
-    /* Status Colors */
+    --border-color: #e5e7eb;  
+    
+    
     --danger-bg: #fef2f2;
     --danger-text: #ef4444;
     
@@ -33,29 +32,28 @@
     --success-text: #15803d;
     --success-border: #bbf7d0;
 
-    /* Badges */
+    
     --role-bg: #fff7ed;
     --role-text: #ea580c;
     --neutral-bg: #f3f4f6;
     --neutral-text: #6b7280;
     
-    /* Action Buttons */
+    
     --btn-action-bg: #ffffff;
     --btn-action-border: #d1d5db;
     --btn-action-hover: #f3f4f6;
     
-    /* Certificate Button */
+    
     --cert-bg: #fff7ed;
     --cert-text: #ea580c;
     --cert-border: #fed7aa;
     
-    /* Radii */
+    
     --radius-sm: 6px;
     --radius-md: 8px;
     --radius-lg: 12px;
 }
 
-/* Reset & Base Styles */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -79,12 +77,10 @@ a {
     color: inherit;
 }
 
-/* SVG icons */
 svg {
     display: inline-block;
 }
 
-/* Navigation Bar */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -186,7 +182,6 @@ svg {
 
 .icon-btn svg { width: 20px; height: 20px; }
 
-/* Badges */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -223,21 +218,18 @@ svg {
     border: 1px solid var(--border-color);
 }
 
-/* Page Header General */
 .subtitle {
     color: var(--text-secondary);
     font-size: 0.875rem;
     margin-top: 4px;
 }
 
-/* Containers base padding */
 .container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 2.5rem 2rem;
 }
 
-/* Global Buttons */
 .btn-primary {
     display: inline-flex;
     align-items: center;

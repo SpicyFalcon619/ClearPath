@@ -1,8 +1,3 @@
-
-
-/* Layout & Page Header */
-
-
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -14,8 +9,6 @@
     font-size: 1.5rem;
     margin-bottom: 0.25rem;
 }
-
-
 
 .search-input {
     padding: 0.6rem 1rem;
@@ -34,7 +27,6 @@
     border-color: var(--brand-primary);
 }
 
-/* Users List */
 .users-list {
     display: flex;
     flex-direction: column;
@@ -75,9 +67,6 @@
     gap: 1.5rem;
 }
 
-
-
-/* Action Buttons */
 .action-text {
     background: none;
     border: none;

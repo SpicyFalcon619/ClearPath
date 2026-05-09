@@ -1,16 +1,10 @@
-# ClearPath
-
-University Clearance System - Frontend Replication
-
-This repository contains the replicated frontend for the ClearPath university clearance system.
-
-## Project Structure
-
-- `web_master_admin/`: Frontend for the Master Admin role.
-- `web_department_admin/`: Frontend for the Department Admin role.
-
-## Technologies Used
-
-- HTML5
-- Vanilla CSS
-- Lucide Icons
+IyBDbGVhclBhdGgKClVuaXZlcnNpdHkgQ2xlYXJhbmNlIFN5c3RlbSAtIEZy
+b250ZW5kIFJlcGxpY2F0aW9uCgpUaGlzIHJlcG9zaXRvcnkgY29udGFpbnMg
+dGhlIHJlcGxpY2F0ZWQgZnJvbnRlbmQgZm9yIHRoZSBDbGVhclBhdGggdW5p
+dmVyc2l0eSBjbGVhcmFuY2Ugc3lzdGVtLgoKIyMgUHJvamVjdCBTdHJ1Y3R1
+cmUKCi0gYHdlYl9tYXN0ZXJfYWRtaW4vYDogRnJvbnRlbmQgZm9yIHRoZSBN
+YXN0ZXIgQWRtaW4gcm9sZS4KLSBgd2ViX2RlcGFydG1lbnRfYWRtaW4vYDog
+RnJvbnRlbmQgZm9yIHRoZSBEZXBhcnRtZW50IEFkbWluIHJvbGUuCi0gYHdl
+Yl9zdHVkZW50L2A6IEZyb250ZW5kIGZvciB0aGUgU3R1ZGVudCByb2xlLgoK
+IyMgVGVjaG5vbG9naWVzIFVzZWQKCi0gSVRNTDUKLSBWYW5pbGxhIENTUwot
+IEx1Y2lkZSBJY29ucwo=

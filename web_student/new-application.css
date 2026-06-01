@@ -1,3 +1,5 @@
+/* new-application.css — Specific styles for the student application form */
+
 .app-container {
     max-width: 800px;
     margin: 0 auto;
@@ -79,6 +81,7 @@
     min-height: 100px;
 }
 
+/* File Upload Drop Zone */
 .drop-zone {
     border: 1px dashed var(--border-color);
     border-radius: var(--radius-lg);
@@ -116,6 +119,7 @@
     color: var(--text-secondary);
 }
 
+/* Emergency Request */
 .emergency-header {
     display: flex;
     align-items: center;
@@ -145,6 +149,7 @@
     color: var(--text-primary);
 }
 
+/* Toggle Switch */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -187,6 +192,7 @@
     transform: translateX(20px);
 }
 
+/* Routed Departments Info Box */
 .routed-info {
     background-color: var(--bg-main);
     border: 1px solid var(--border-color);
@@ -197,6 +203,7 @@
     margin-bottom: 2rem;
 }
 
+/* Form Actions */
 .form-actions {
     display: flex;
     justify-content: flex-end;

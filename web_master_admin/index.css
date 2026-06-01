@@ -1,3 +1,4 @@
+/* Page Header */
 .page-header {
     display: flex;
     justify-content: space-between;
@@ -9,6 +10,7 @@
     font-size: 1.5rem;
 }
 
+/* Metrics Grid */
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -67,6 +69,7 @@
     color: var(--text-primary);
 }
 
+/* Main Content Grid */
 .content-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -81,6 +84,7 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Applications Panel */
 .panel-header {
     display: flex;
     justify-content: space-between;
@@ -128,6 +132,7 @@
     border-color: var(--brand-primary);
 }
 
+/* Dropdown */
 .dropdown {
     position: relative;
 }
@@ -149,6 +154,7 @@
     z-index: 10;
 }
 
+/* Hover to open dropdown (simulating the click state from image 2) */
 .dropdown:hover .dropdown-menu {
     opacity: 1;
     visibility: visible;
@@ -179,6 +185,7 @@
     height: 16px;
 }
 
+/* Application List */
 .application-list {
     display: flex;
     flex-direction: column;
@@ -203,6 +210,9 @@
     color: var(--text-secondary);
 }
 
+
+
+/* Bottlenecks Panel */
 .panel-header-simple {
     margin-bottom: 1.5rem;
 }

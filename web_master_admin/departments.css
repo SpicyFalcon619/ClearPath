@@ -1,3 +1,8 @@
+
+
+/* Layout & Page Header */
+
+
 .page-header {
     margin-bottom: 2rem;
 }
@@ -7,6 +12,9 @@
     margin-bottom: 0.25rem;
 }
 
+
+
+/* Add Department Card */
 .add-department-card {
     background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
@@ -56,6 +64,9 @@
     color: #9ca3af;
 }
 
+
+
+/* Departments List */
 .departments-list {
     display: flex;
     flex-direction: column;
@@ -94,6 +105,7 @@
     color: var(--text-secondary);
 }
 
+/* Custom Toggle Switch CSS */
 .switch {
     position: relative;
     display: inline-block;
@@ -137,6 +149,7 @@ input:checked + .slider:before {
     transform: translateX(20px);
 }
 
+/* Rounded sliders */
 .slider.round {
     border-radius: 24px;
 }

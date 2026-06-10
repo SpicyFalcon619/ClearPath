@@ -1,37 +1,37 @@
 # ClearPath
 
-**ClearPath** is a modern, premium frontend replication of a University Clearance System. It is designed to provide a seamless and visually stunning experience for students, department admins, and master administrators.
+ClearPath is a comprehensive, full-stack University Clearance System designed to streamline the graduation and departure process for students. It provides a seamless, dynamic experience for students, department administrators, and master administrators.
 
-## 🚀 Overview
+## Overview
 
-This project focuses on a "Vanilla" tech stack (HTML/CSS) to achieve high performance and complete design control. It features three distinct user portals, all sharing a unified design language:
+The system eliminates paper-based clearance forms by digitizing the entire workflow. Students can track their clearance status in real-time, while department admins can efficiently manage queues, assign dues, and communicate directly with students.
 
-- **🎓 Student Portal**: Allows students to submit new clearance applications, upload supporting documents, and track their approval progress in real-time.
-- **🏢 Department Admin Portal**: A streamlined queue for department-specific admins (Finance, Lab, etc.) to review, approve, or deny student requests.
-- **⚖️ Master Admin Portal**: A high-level management dashboard for overseeing all users, departments, and viewing detailed clearance audit trails.
+It features three distinct user portals:
+- **Student Portal**: Allows students to submit clearance applications, upload supporting documents, track departmental approvals in real-time, and download their final Clearance Certificate.
+- **Department Admin Portal**: A streamlined dashboard for department-specific admins (e.g., Library, Finance, Labs) to review applications, communicate with students via built-in messaging, and approve or deny requests dynamically.
+- **Master Admin Portal**: A high-level management dashboard for overseeing the entire system, adding new departments, managing user roles, and identifying clearance bottlenecks.
 
-## 🛠️ Technologies Used
+## Technologies Used
 
-- **HTML5**: Semantic structure.
-- **Vanilla CSS**: Custom design system using CSS Variables for theme consistency.
-- **Lucide Icons**: Sharp, lightweight SVG icons.
-- **Google Fonts**: 'Inter' for professional typography.
+- **Backend**: PHP 8+ (Vanilla PHP)
+- **Database**: MySQL (PDO)
+- **Frontend Structure**: HTML5
+- **Styling**: Custom CSS design system using CSS Variables for theme consistency, ensuring a premium, sleek UI without heavy frameworks.
+- **Interactivity**: Vanilla JavaScript (Fetch API) for dynamic AJAX modals and real-time form submissions without page reloads.
+- **Icons**: Lucide Icons.
 
-## 📂 Project Structure
+## Project Structure
 
-The repository is organized by role:
+- `/admin` - Master administrator dashboard and user management logic.
+- `/dept` - Department administrator review queues and AJAX modals.
+- `/student` - Student application workflows and certificate generation.
+- `/auth` - Login, registration, and session initialization.
+- `/includes` - Shared components (header, footer), database configuration, and authentication helpers.
+- `/assets/css` - Global design system and layout stylesheets.
 
-- `/web_student`: Student dashboard and application forms.
-- `/web_department_admin`: Departmental approval queues.
-- `/web_master_admin`: Master management and user details.
+## Key Features
 
-## 🎨 Key Features
-
-- **Unified Design System**: All colors, spacing, and components are controlled via a central `global.css`.
-- **Progress Tracking**: Visual progress bars and status badges for students.
-- **Audit Trails**: Timeline views for administrative tracking.
-- **Responsive Layouts**: Built to look great on various screen sizes.
-
----
-
-*This project is a frontend replication demo.*
+- **AJAX-Powered Modals**: Instant, seamless review modals for admins to manage dues and chat with students without page reloads.
+- **Role-Based Access Control (RBAC)**: Secure routing and session management strictly separating Students, Department Admins, and Master Admins.
+- **Real-Time Messaging**: Built-in chat system allowing students and admins to resolve discrepancies instantly.
+- **Dynamic Certificate Generation**: Automatically unlocks and generates a printable certificate once all departments have approved the student.

@@ -17,6 +17,20 @@ function current_user_email() {
     }
     return $email;
 }
+
+$unread_notifications_count = 0;
+$notifications = [];
+if (isset($_SESSION['user_id'])) {
+    // Fetch unread count
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0");
+    $stmt->execute([$_SESSION['user_id']]);
+    $unread_notifications_count = $stmt->fetchColumn();
+
+    // Fetch latest 5 notifications
+    $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+    $stmt->execute([$_SESSION['user_id']]);
+    $notifications = $stmt->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -106,7 +120,98 @@ function current_user_email() {
             margin: 0 auto;
             padding: 2rem 1.5rem;
         }
+
+        /* Notifications Dropdown */
+        .notif-dropdown-wrapper {
+            position: relative;
+        }
+        .notif-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: var(--destructive);
+            color: white;
+            font-size: 0.6rem;
+            font-weight: 700;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid var(--surface-1);
+        }
+        .notif-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            width: 320px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 50;
+        }
+        .notif-dropdown.show {
+            display: flex;
+        }
+        .notif-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notif-item {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: block;
+            text-decoration: none;
+            color: var(--foreground);
+            transition: background 0.2s;
+        }
+        .notif-item:hover {
+            background: var(--surface-2);
+        }
+        .notif-item.unread {
+            background: color-mix(in srgb, var(--primary) 5%, transparent);
+        }
+        .notif-time {
+            font-size: 0.75rem;
+            color: var(--muted-foreground);
+            margin-top: 0.25rem;
+        }
     </style>
+    <script>
+        function toggleNotifications(e) {
+            e.preventDefault();
+            const dropdown = document.getElementById('notif-dropdown');
+            dropdown.classList.toggle('show');
+            
+            // Mark all as read
+            if (dropdown.classList.contains('show')) {
+                fetch('/clearpath/api/mark_notifications_read.php', { method: 'POST' })
+                    .then(() => {
+                        const badge = document.getElementById('notif-badge');
+                        if (badge) badge.style.display = 'none';
+                        document.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
+                    });
+            }
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const wrapper = document.querySelector('.notif-dropdown-wrapper');
+            const dropdown = document.getElementById('notif-dropdown');
+            if (dropdown && dropdown.classList.contains('show') && !wrapper.contains(e.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="app-shell">
@@ -140,7 +245,7 @@ function current_user_email() {
                             <a href="/clearpath/admin/dashboard.php" class="tab-item <?php echo $active === 'dashboard' ? 'active' : ''; ?>">
                                 <i data-lucide="layout-dashboard" style="width: 14px; height: 14px;"></i> Overview
                             </a>
-                            <a href="/clearpath/admin/students.php" class="tab-item <?php echo $active === 'users' ? 'active' : ''; ?>">
+                            <a href="/clearpath/admin/users.php" class="tab-item <?php echo $active === 'users' ? 'active' : ''; ?>">
                                 <i data-lucide="users" style="width: 14px; height: 14px;"></i> Users
                             </a>
                             <a href="/clearpath/admin/departments.php" class="tab-item <?php echo $active === 'departments' ? 'active' : ''; ?>">
@@ -151,12 +256,39 @@ function current_user_email() {
                 </div>
                 
                 <div class="header-right">
-                    <?php if ($role === 'student'): ?>
-                        <a href="/clearpath/student/notifications.php" class="icon-btn" title="Notifications">
+                    <div class="notif-dropdown-wrapper">
+                        <a href="#" class="icon-btn" title="Notifications" onclick="toggleNotifications(event)">
                             <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+                            <?php if ($unread_notifications_count > 0): ?>
+                                <span class="notif-badge" id="notif-badge"><?php echo $unread_notifications_count > 9 ? '9+' : $unread_notifications_count; ?></span>
+                            <?php endif; ?>
                         </a>
-                    <?php endif; ?>
-                    <span class="user-email"><?php echo htmlspecialchars(current_user_email()); ?></span>
+                        
+                        <div class="notif-dropdown" id="notif-dropdown">
+                            <div class="notif-header">
+                                <span>Notifications</span>
+                            </div>
+                            <div style="max-height: 400px; overflow-y: auto;">
+                                <?php if (empty($notifications)): ?>
+                                    <div style="padding: 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; color: var(--muted-foreground); font-size: 0.875rem;">
+                                        <i data-lucide="bell-off" style="width: 24px; height: 24px; opacity: 0.5;"></i>
+                                        <span>No notifications yet.</span>
+                                    </div>
+                                <?php else: ?>
+                                    <?php foreach ($notifications as $notif): ?>
+                                        <a href="<?php echo htmlspecialchars($notif['link'] ?: '#'); ?>" class="notif-item <?php echo $notif['is_read'] ? '' : 'unread'; ?>">
+                                            <div class="text-sm"><?php echo htmlspecialchars($notif['message']); ?></div>
+                                            <div class="notif-time"><?php echo date('M d, g:i A', strtotime($notif['created_at'])); ?></div>
+                                        </a>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="/clearpath/profile.php" class="icon-btn" title="Profile">
+                        <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                    </a>
                     <a href="/clearpath/auth/logout.php" class="icon-btn" title="Sign out">
                         <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
                     </a>

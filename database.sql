@@ -50,11 +50,14 @@ CREATE TABLE `users` (
 CREATE TABLE `applications` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
+  `course` varchar(255) DEFAULT NULL,
+  `batch` varchar(50) DEFAULT NULL,
   `reason` text DEFAULT NULL,
   `is_emergency` tinyint(1) NOT NULL DEFAULT 0,
   `emergency_justification` text DEFAULT NULL,
   `overall_status` enum('in_progress','action_required','completed') NOT NULL DEFAULT 'in_progress',
   `certificate_issued` tinyint(1) NOT NULL DEFAULT 0,
+  `serial_number` int(11) DEFAULT NULL UNIQUE,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE

@@ -35,10 +35,13 @@ if (!$app) {
     die("Application not found or not assigned to your department.");
 }
 
-// Fetch outstanding dues
-$stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? AND status = 'outstanding'");
+// Fetch items
+$stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
 $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
-$outstanding_items = $stmt->fetchAll();
+$items = $stmt->fetchAll();
+
+// Outstanding for logic checks
+$outstanding_items = array_filter($items, fn($i) => $i['status'] === 'outstanding');
 
 // Fetch documents
 $stmt = $pdo->prepare("SELECT * FROM documents WHERE application_id = ?");
@@ -53,8 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action'])) {
         $action = $_POST['action'];
         
-        if ($action === 'approve' || $action === 'deny') {
-            $new_status = $action === 'approve' ? 'approved' : 'denied';
+        if ($action === 'approve' || $action === 'deny' || $action === 'pending') {
+            $new_status = $action;
+            if ($action === 'approve') $new_status = 'approved';
+            if ($action === 'deny') $new_status = 'denied';
             
             if ($new_status === 'approved' && count($outstanding_items) > 0) {
                 $error_msg = "Cannot approve. Student still has outstanding dues.";
@@ -89,12 +94,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error_msg = "Database error: " . $e->getMessage();
                 }
             }
-        } elseif ($action === 'add_due') {
-            $due_kind = trim($_POST['due_kind'] ?? 'fee');
-            $due_title = trim($_POST['due_title'] ?? '');
-            $due_amount = floatval($_POST['due_amount'] ?? 0);
+        } elseif ($action === 'add_item') {
+            $due_kind = trim($_POST['kind'] ?? 'fee');
+            $due_title = trim($_POST['title'] ?? '');
+            $due_amount = floatval($_POST['amount'] ?? 0);
             $due_date = trim($_POST['due_date'] ?? '');
-            $due_notes = trim($_POST['due_notes'] ?? '');
+            $due_notes = trim($_POST['description'] ?? '');
             
             if ($due_date === '') $due_date = null;
             if ($due_notes === '') $due_notes = null;
@@ -102,33 +107,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($due_title) {
                 $stmt = $pdo->prepare("INSERT INTO clearance_items (user_id, department_id, application_id, title, amount, kind, due_date, description, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'outstanding')");
                 if ($stmt->execute([$app['student_user_id'], $admin['dept_id'], $app_id, $due_title, $due_amount, $due_kind, $due_date, $due_notes])) {
-                    $success_msg = "Outstanding due added successfully.";
-                    $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? AND status = 'outstanding'");
-                    $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
-                    $outstanding_items = $stmt->fetchAll();
+                    $success_msg = "Item added successfully.";
                     
                     if ($app['status'] === 'approved') {
-                        $stmt = $pdo->prepare("UPDATE department_status SET status = 'denied' WHERE id = ?");
+                        $stmt = $pdo->prepare("UPDATE department_status SET status = 'pending' WHERE id = ?");
                         $stmt->execute([$app['ds_id']]);
-                        $app['status'] = 'denied';
+                        $app['status'] = 'pending';
                     }
+                    
+                    $stmt = $pdo->prepare("UPDATE department_status SET unread_student_updates = 1 WHERE id = ?");
+                    $stmt->execute([$app['ds_id']]);
+                    
+                    $msg = "New clearance item added: {$due_title}";
+                    $stmt = $pdo->prepare("INSERT INTO notifications (user_id, message, link) VALUES (?, ?, '/clearpath/student/dashboard.php')");
+                    $stmt->execute([$app['student_user_id'], $msg]);
+                    
+                    // Refresh items
+                    $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
+                    $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
+                    $items = $stmt->fetchAll();
+                    $outstanding_items = array_filter($items, fn($i) => $i['status'] === 'outstanding');
                 }
             }
-        } elseif ($action === 'clear_due') {
-            $due_id = (int)$_POST['due_id'];
-            $stmt = $pdo->prepare("UPDATE clearance_items SET status = 'cleared' WHERE id = ? AND department_id = ?");
-            if ($stmt->execute([$due_id, $admin['dept_id']])) {
-                $success_msg = "Due marked as cleared.";
-                $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? AND status = 'outstanding'");
+        } elseif ($action === 'toggle_item_status') {
+            $item_id = (int)$_POST['item_id'];
+            $status = $_POST['status'];
+            $stmt = $pdo->prepare("UPDATE clearance_items SET status = ? WHERE id = ? AND department_id = ?");
+            if ($stmt->execute([$status, $item_id, $admin['dept_id']])) {
+                $stmt = $pdo->prepare("UPDATE department_status SET unread_student_updates = 1 WHERE id = ?");
+                $stmt->execute([$app['ds_id']]);
+                
+                $msg = "Item status updated to " . strtoupper($status);
+                $stmt = $pdo->prepare("INSERT INTO notifications (user_id, message, link) VALUES (?, ?, '/clearpath/student/dashboard.php')");
+                $stmt->execute([$app['student_user_id'], $msg]);
+                // Refresh items
+                $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
                 $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
-                $outstanding_items = $stmt->fetchAll();
+                $items = $stmt->fetchAll();
+                $outstanding_items = array_filter($items, fn($i) => $i['status'] === 'outstanding');
+            }
+        } elseif ($action === 'delete_item') {
+            $item_id = (int)$_POST['item_id'];
+            $stmt = $pdo->prepare("DELETE FROM clearance_items WHERE id = ? AND department_id = ?");
+            if ($stmt->execute([$item_id, $admin['dept_id']])) {
+                $success_msg = "Item deleted.";
+                // Refresh items
+                $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
+                $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
+                $items = $stmt->fetchAll();
+                $outstanding_items = array_filter($items, fn($i) => $i['status'] === 'outstanding');
             }
         } elseif ($action === 'send_message') {
             $message_text = trim($_POST['message_text'] ?? '');
             if ($message_text) {
                 $stmt = $pdo->prepare("INSERT INTO messages (department_status_id, sender_id, message) VALUES (?, ?, ?)");
                 if ($stmt->execute([$app['ds_id'], $admin['admin_id'], $message_text])) {
-                    $success_msg = "Message sent successfully.";
+                    $stmt = $pdo->prepare("UPDATE department_status SET unread_student_updates = 1 WHERE id = ?");
+                    $stmt->execute([$app['ds_id']]);
+                    
+                    $msg = "New message from department";
+                    $stmt = $pdo->prepare("INSERT INTO notifications (user_id, message, link) VALUES (?, ?, '/clearpath/student/dashboard.php')");
+                    $stmt->execute([$app['student_user_id'], $msg]);
                 }
             }
         }
@@ -164,11 +203,7 @@ $messages = $stmt->fetchAll();
             <?php echo htmlspecialchars($error_msg); ?>
         </div>
     <?php endif; ?>
-    <?php if ($success_msg): ?>
-        <div style="color: var(--status-approved); background-color: var(--status-approved-bg); border: 1px solid var(--status-approved); padding: 0.75rem; border-radius: var(--radius-md); font-size: 0.875rem; text-align: center; margin-bottom: 1rem;">
-            <?php echo htmlspecialchars($success_msg); ?>
-        </div>
-    <?php endif; ?>
+
 
     <div class="flex-col gap-6">
             
@@ -186,75 +221,170 @@ $messages = $stmt->fetchAll();
                 </div>
             <?php endif; ?>
 
-            <!-- Dues Section -->
-            <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem; background: white;">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="font-medium text-sm">Dues & obligations for this student</div>
-                    <button type="button" class="btn btn-outline" onclick="const f = document.getElementById('add-due-form'); f.style.display = (f.style.display === 'none' || f.style.display === '') ? 'flex' : 'none';" style="border-radius: 9999px; height: auto; padding: 0.375rem 0.75rem;">
-                        <i data-lucide="plus" style="width: 14px; height: 14px;"></i> Add item
-                    </button>
+            <!-- Dues Header -->
+            <div class="flex items-center justify-between mt-8 mb-4">
+                <div>
+                    <div class="text-sm font-medium">Dues & obligations for this student</div>
+                    <?php
+                        $total_due = 0;
+                        foreach($items as $i) { if($i['status'] === 'outstanding') $total_due += $i['amount']; }
+                    ?>
+                    <div class="text-xs text-muted" style="margin-top: 0.125rem;">
+                        <?php echo count($items); ?> items <?php if($total_due > 0) echo '· BDT ' . number_format($total_due, 0) . ' due'; ?>
+                    </div>
                 </div>
-                
-                <form id="add-due-form" class="flex-col gap-4 mb-4" action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" onsubmit="submitReviewModal(event, this)" style="display: none; padding: 1rem; background-color: var(--surface-2); border-radius: var(--radius-md); border: 1px solid var(--border);">
-                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button type="button" class="btn btn-outline" style="height: 1.75rem; padding: 0 0.75rem; font-size: 0.75rem; border-radius: 9999px; border-color: var(--border);" onclick="let f = document.getElementById('add-due-form'); f.style.display = (f.style.display === 'none' || f.style.display === '') ? 'block' : 'none';">
+                    <i data-lucide="plus" style="width: 14px; height: 14px; margin-right: 0.25rem;"></i> Add item
+                </button>
+            </div>
+
+            <!-- Add Item Form -->
+            <div id="add-due-form" style="display: none; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+                <form action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" class="flex flex-col gap-4" onsubmit="submitReviewModal(event, this)">
+                    <input type="hidden" name="action" value="add_item">
+                    
+                    <div class="grid" style="grid-template-columns: 1fr 2fr; gap: 1rem;">
                         <div class="form-group mb-0">
-                            <label class="label text-xs">Type</label>
-                            <select class="select" name="due_kind">
+                            <label class="label text-sm">Type</label>
+                            <select name="kind" class="select" required onchange="
+                                let form = this.closest('form');
+                                let amtInput = form.querySelector('input[name=amount]');
+                                let amtLabel = form.querySelector('.amount-label');
+                                if (this.value === 'fee') {
+                                    amtInput.required = true;
+                                    amtLabel.innerText = 'Amount *';
+                                } else {
+                                    amtInput.required = false;
+                                    amtLabel.innerText = 'Amount (optional)';
+                                }
+                            ">
                                 <option value="fee">Fee / Money</option>
-                                <option value="equipment">Equipment / Book</option>
+                                <option value="book">Book</option>
+                                <option value="equipment">Equipment</option>
                                 <option value="document">Document</option>
                                 <option value="other">Other</option>
                             </select>
                         </div>
                         <div class="form-group mb-0">
-                            <label class="label text-xs">Title</label>
-                            <input class="input" type="text" name="due_title" placeholder="e.g. Tuition Spring 2026" required>
+                            <label class="label text-sm">Title</label>
+                            <input type="text" name="title" class="input" placeholder="e.g. Tuition Spring 2026" required>
+                        </div>
+                    </div>
+                    <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group mb-0">
+                            <label class="label text-sm amount-label">Amount *</label>
+                            <input type="number" step="0.01" name="amount" class="input" placeholder="0.00" required>
                         </div>
                         <div class="form-group mb-0">
-                            <label class="label text-xs">Amount (optional)</label>
-                            <input class="input" type="number" name="due_amount" placeholder="0.00" step="0.01">
-                        </div>
-                        <div class="form-group mb-0">
-                            <label class="label text-xs">Due date (optional)</label>
-                            <input class="input" type="date" name="due_date">
+                            <label class="label text-sm">Due date (optional)</label>
+                            <input type="date" name="due_date" class="input">
                         </div>
                     </div>
                     <div class="form-group mb-0">
-                        <label class="label text-xs">Notes (optional)</label>
-                        <textarea class="textarea" name="due_notes" placeholder="Extra detail visible to the student" style="min-height: 60px;"></textarea>
+                        <label class="label text-sm">Notes (optional)</label>
+                        <textarea name="description" class="input" placeholder="Extra detail visible to the student" style="min-height: 4rem;"></textarea>
                     </div>
                     <div class="flex justify-end gap-2">
                         <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-due-form').style.display='none'">Cancel</button>
-                        <button type="submit" name="action" value="add_due" class="btn btn-primary">Save</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </form>
+            </div>
 
-                <div class="flex-col gap-2">
-                    <?php if (count($outstanding_items) === 0): ?>
-                        <div class="text-sm text-muted italic">
-                            No items recorded. Add dues, books or equipment the student must clear.
-                        </div>
-                    <?php else: ?>
-                        <?php foreach ($outstanding_items as $item): ?>
-                            <div class="flex items-center justify-between" style="padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-md); background-color: var(--surface-1);">
-                                <div>
-                                    <div class="font-medium text-sm"><?php echo htmlspecialchars($item['title']); ?></div>
-                                    <div class="text-sm mt-1" style="color: var(--status-emergency); font-weight: 600;">$<?php echo number_format($item['amount'], 2); ?></div>
+            <div class="flex flex-col gap-2">
+                <?php if (count($items) === 0): ?>
+                    <div class="text-xs text-muted" style="font-style: italic; opacity: 0.7;">
+                        No items recorded. Add dues, books or equipment the student must clear.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($items as $item): ?>
+                        <?php
+                            $icon = 'circle-dot';
+                            if ($item['kind'] === 'fee') $icon = 'banknote';
+                            if ($item['kind'] === 'book') $icon = 'book';
+                            if ($item['kind'] === 'equipment') $icon = 'wrench';
+                            if ($item['kind'] === 'document') $icon = 'file-text';
+                            
+                            $bg_color = 'var(--surface-1)';
+                            $opacity = '1';
+                            $text_style = '';
+                            if ($item['status'] === 'cleared' || $item['status'] === 'waived') {
+                                $bg_color = 'var(--background)';
+                                $opacity = '0.6';
+                                $text_style = 'text-decoration: line-through; color: var(--muted-foreground);';
+                            }
+                        ?>
+                        <div class="flex items-center justify-between" style="padding: 0.5rem 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border); background: <?php echo $bg_color; ?>; opacity: <?php echo $opacity; ?>; transition: all 0.2s;">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="<?php echo $icon; ?>" style="width: 14px; height: 14px; color: var(--muted-foreground); margin-right: 0.5rem; margin-top: 0.25rem;"></i>
+                                <div class="flex flex-col">
+                                    <div class="flex items-center gap-2">
+                                        <div class="text-sm font-medium" style="<?php echo $text_style; ?>">
+                                            <?php echo htmlspecialchars($item['title']); ?>
+                                        </div>
+                                        <?php if ($item['status'] === 'cleared'): ?>
+                                            <div style="font-size: 0.65rem; font-weight: 600; color: var(--status-approved); background: var(--status-approved-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">CLEARED</div>
+                                        <?php elseif ($item['status'] === 'waived'): ?>
+                                            <div style="font-size: 0.65rem; font-weight: 600; color: var(--status-pending); background: var(--status-pending-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">WAIVED</div>
+                                        <?php endif; ?>
+                                        <?php if ($item['amount'] > 0): ?>
+                                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--status-emergency); background: var(--status-emergency-bg); border: 1px solid color-mix(in srgb, var(--status-emergency) 30%, transparent); padding: 0.125rem 0.5rem; border-radius: 9999px;">
+                                                BDT <?php echo number_format($item['amount'], 0); ?>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php if ($item['description']): ?>
+                                        <div class="text-xs text-muted mt-1"><?php echo htmlspecialchars($item['description']); ?></div>
+                                    <?php endif; ?>
+                                    <?php if ($item['due_date']): ?>
+                                        <div class="text-xs text-muted" style="margin-top: 0.125rem;">Due: <?php echo date('M d, Y', strtotime($item['due_date'])); ?></div>
+                                    <?php endif; ?>
                                 </div>
-                                <form action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" onsubmit="submitReviewModal(event, this)">
-                                    <input type="hidden" name="due_id" value="<?php echo $item['id']; ?>">
-                                    <button type="submit" name="action" value="clear_due" class="btn btn-ghost" style="color: var(--status-approved); padding: 0.25rem 0.5rem; height: auto;">
-                                        <i data-lucide="check" style="width: 14px; height: 14px;"></i> Clear
+                            </div>
+                            <div class="flex items-center gap-6" style="margin-right: 0.5rem;">
+                                <?php if ($item['status'] === 'outstanding'): ?>
+                                    <form action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" style="margin: 0;" onsubmit="submitReviewModal(event, this)">
+                                        <input type="hidden" name="action" value="toggle_item_status">
+                                        <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                        <input type="hidden" name="status" value="cleared">
+                                        <button type="submit" class="icon-action-btn icon-action-btn-check" title="Mark Cleared">
+                                            <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+                                        </button>
+                                    </form>
+                                    <form action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" style="margin: 0;" onsubmit="submitReviewModal(event, this)">
+                                        <input type="hidden" name="action" value="toggle_item_status">
+                                        <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                        <input type="hidden" name="status" value="waived">
+                                        <button type="submit" class="icon-action-btn icon-action-btn-waive" title="Waive Item">
+                                            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <form action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" style="margin: 0;" onsubmit="submitReviewModal(event, this)">
+                                        <input type="hidden" name="action" value="toggle_item_status">
+                                        <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                        <input type="hidden" name="status" value="outstanding">
+                                        <button type="submit" class="icon-action-btn" style="color: var(--muted-foreground);" title="Undo (Mark Outstanding)">
+                                            <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                                <form action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" style="margin: 0;" onsubmit="if(confirm('Delete this item?')) { submitReviewModal(event, this); } else { event.preventDefault(); }">
+                                    <input type="hidden" name="action" value="delete_item">
+                                    <input type="hidden" name="item_id" value="<?php echo $item['id']; ?>">
+                                    <button type="submit" class="icon-action-btn icon-action-btn-trash" title="Delete Item">
+                                        <i data-lucide="trash-2" style="width: 18px; height: 18px;"></i>
                                     </button>
                                 </form>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
+        </div>
 
             <!-- Messages Header -->
-            <div class="text-sm font-medium mb-3 flex items-center gap-2">
+            <div class="text-sm font-medium mb-3 flex items-center gap-2" style="margin-top: 2.5rem;">
                 <i data-lucide="message-square" style="width: 16px; height: 16px;"></i> Messages with student
             </div>
             
@@ -298,12 +428,21 @@ $messages = $stmt->fetchAll();
             <!-- Final Actions Form -->
             <form action="review_modal_content.php?id=<?php echo $app_id; ?>" method="POST" onsubmit="submitReviewModal(event, this)">
                 <div class="flex items-center justify-end pt-2" style="gap: 1rem;">
-                    <button type="submit" name="action" value="deny" class="btn btn-outline" style="border-radius: var(--radius-md); padding: 0.5rem 1rem; color: var(--foreground); border-color: var(--border);">
-                        <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i> Deny
-                    </button>
-                    <button type="submit" name="action" value="approve" class="btn btn-primary" style="border-radius: var(--radius-md); padding: 0.5rem 1.25rem; <?php echo count($outstanding_items) > 0 ? 'opacity: 0.5;' : ''; ?>" <?php echo count($outstanding_items) > 0 ? 'disabled' : ''; ?>>
-                        <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Approve
-                    </button>
+                    <?php if ($app['status'] !== 'pending'): ?>
+                        <button type="submit" name="action" value="pending" class="btn btn-ghost" style="border-radius: var(--radius-md); padding: 0.5rem 1rem; color: var(--muted-foreground);">
+                            <i data-lucide="clock" style="width: 16px; height: 16px;"></i> Mark Pending
+                        </button>
+                    <?php endif; ?>
+                    <?php if ($app['status'] !== 'denied'): ?>
+                        <button type="submit" name="action" value="deny" class="btn btn-outline" style="border-radius: var(--radius-md); padding: 0.5rem 1rem; color: var(--foreground); border-color: var(--border);">
+                            <i data-lucide="x-circle" style="width: 16px; height: 16px;"></i> Deny
+                        </button>
+                    <?php endif; ?>
+                    <?php if ($app['status'] !== 'approved'): ?>
+                        <button type="submit" name="action" value="approve" class="btn btn-primary" style="border-radius: var(--radius-md); padding: 0.5rem 1.25rem; <?php echo count($outstanding_items) > 0 ? 'opacity: 0.5;' : ''; ?>" <?php echo count($outstanding_items) > 0 ? 'disabled' : ''; ?>>
+                            <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Approve
+                        </button>
+                    <?php endif; ?>
                 </div>
             </form>
 </div>

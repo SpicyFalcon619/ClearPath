@@ -12,6 +12,7 @@
     --primary-foreground: hsl(0 0% 100%);
     --primary-hover: hsl(22 90% 48%);
     --primary-glow: hsl(28 100% 62%);
+    --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
 
     --secondary: hsl(30 35% 95%);
     --secondary-foreground: hsl(20 30% 15%);
@@ -70,6 +71,7 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow-y: scroll; /* Prevents horizontal jump when scrollbar appears */
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -104,7 +106,6 @@ a:hover {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-sm);
-    overflow: hidden;
 }
 
 .card-header {
@@ -169,6 +170,7 @@ a:hover {
 
 .btn-primary:hover {
     background-color: var(--primary-hover);
+    color: var(--primary-foreground);
 }
 
 .btn-secondary {
@@ -178,6 +180,7 @@ a:hover {
 
 .btn-secondary:hover {
     background-color: var(--secondary-hover);
+    color: var(--secondary-foreground);
 }
 
 .btn-outline {
@@ -192,6 +195,65 @@ a:hover {
     border-color: var(--primary);
 }
 
+.btn-outline-success {
+    background-color: transparent;
+    border: 1px solid var(--status-approved);
+    color: var(--status-approved);
+}
+
+.btn-outline-success:hover {
+    background-color: var(--status-approved);
+    color: white;
+    border-color: var(--status-approved);
+}
+
+.btn-outline-danger {
+    background-color: transparent;
+    border: 1px solid var(--status-emergency);
+    color: var(--status-emergency);
+}
+
+.btn-outline-danger:hover {
+    background-color: var(--status-emergency);
+    color: white;
+    border-color: var(--status-emergency);
+}
+
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: var(--background);
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: grid;
+    place-content: center;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+input[type="checkbox"]::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    /* Draws a checkmark using clip-path */
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    transform: scale(0);
+    transition: 120ms transform ease-in-out;
+    background-color: white;
+}
+
+input[type="checkbox"]:checked {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+input[type="checkbox"]:checked::before {
+    transform: scale(1);
+}
+
 .btn-ghost {
     background-color: transparent;
     color: var(--foreground);
@@ -199,6 +261,51 @@ a:hover {
 
 .btn-ghost:hover {
     background-color: var(--secondary);
+    color: var(--foreground);
+}
+
+.icon-action-btn {
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.icon-action-btn:active {
+    transform: scale(0.95);
+}
+
+.icon-action-btn-check {
+    color: var(--status-approved);
+}
+.icon-action-btn-check:hover {
+    background-color: var(--status-approved-bg);
+}
+
+.icon-action-btn-cross {
+    color: var(--destructive);
+}
+.icon-action-btn-cross:hover {
+    background-color: var(--status-denied-bg);
+}
+
+.icon-action-btn-waive {
+    color: var(--status-pending);
+}
+.icon-action-btn-waive:hover {
+    background-color: var(--status-pending-bg);
+}
+
+.icon-action-btn-trash {
+    color: var(--muted-foreground);
+}
+.icon-action-btn-trash:hover {
+    color: var(--destructive);
+    background-color: var(--status-denied-bg);
 }
 
 /* Inputs & Forms */
@@ -215,68 +322,51 @@ a:hover {
     color: var(--foreground);
 }
 
-.input {
+.input, .textarea, .select {
     display: flex;
-    height: 2.5rem;
     width: 100%;
     border-radius: var(--radius-md);
-    border: 1px solid var(--input);
-    background-color: transparent;
+    border: 1px solid var(--border);
+    background-color: var(--background);
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    color: var(--foreground);
+    transition: outline 0.2s, box-shadow 0.2s, border-color 0.2s;
     outline: none;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.input:focus {
-    border-color: var(--ring);
-    box-shadow: 0 0 0 1px var(--ring);
-}
-
-.input::placeholder {
-    color: var(--muted-foreground);
-}
-
-.textarea {
-    display: flex;
-    min-height: 80px;
-    width: 100%;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--input);
-    background-color: transparent;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    outline: none;
-    resize: vertical;
-}
-
-.textarea:focus {
-    border-color: var(--ring);
-    box-shadow: 0 0 0 1px var(--ring);
+.input, .select {
+    height: 2.25rem;
 }
 
 .select {
-    display: flex;
-    height: 2.5rem;
-    width: 100%;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--input);
-    background-color: transparent;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    outline: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.input:focus, .textarea:focus, .select:focus {
+    border-color: var(--ring);
+    box-shadow: 0 0 0 1px var(--background), 0 0 0 3px rgba(37, 16, 66, 0.15);
+}
+
+.input::placeholder, .textarea::placeholder {
+    color: var(--muted-foreground);
+}
+
+.select {
     appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23251042%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2371717a%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
     background-repeat: no-repeat;
     background-position: right 0.75rem center;
     background-size: 1rem;
-}
-
-.select:focus {
-    border-color: var(--ring);
-    box-shadow: 0 0 0 1px var(--ring);
+    padding-right: 2rem;
 }
 
 /* Tabs (Pills) */

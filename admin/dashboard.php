@@ -2,10 +2,6 @@
 require_once __DIR__ . '/../includes/auth.php';
 require_role('master_admin');
 
-$page_title = 'Overview';
-$active_tab = 'dashboard';
-require_once __DIR__ . '/../includes/header.php';
-
 // Fetch global metrics
 $stmt = $pdo->query("SELECT COUNT(*) FROM applications");
 $total_apps = $stmt->fetchColumn();
@@ -20,21 +16,27 @@ $in_progress = $stmt->fetchColumn();
 $stmt = $pdo->query("SELECT COUNT(*) FROM applications WHERE overall_status = 'action_required'");
 $action_required = $stmt->fetchColumn();
 
-// Fetch bottlenecks (departments with most pending statuses)
+// Fetch Outstanding Dues total
+$stmt = $pdo->query("SELECT SUM(amount) FROM clearance_items WHERE status = 'outstanding'");
+$total_due_amount = $stmt->fetchColumn() ?: 0;
+
+$stmt = $pdo->query("SELECT COUNT(*) FROM clearance_items WHERE status = 'outstanding'");
+$total_due_count = $stmt->fetchColumn();
+
+// Fetch bottlenecks
 $stmt = $pdo->query("
     SELECT d.name, COUNT(*) as pending_count 
     FROM department_status ds 
     JOIN departments d ON ds.department_id = d.id 
     WHERE ds.status = 'pending' 
     GROUP BY d.id 
-    ORDER BY pending_count DESC 
-    LIMIT 6
+    ORDER BY pending_count DESC
 ");
 $bottlenecks = $stmt->fetchAll();
 
 // Search and filter applications
 $search = trim($_GET['search'] ?? '');
-$status_filter = trim($_GET['status'] ?? '');
+$status_filter = trim($_GET['status'] ?? 'all');
 
 $query = "
     SELECT a.id, a.user_id, a.overall_status, a.is_emergency, a.created_at, u.full_name, u.email, u.course, u.batch
@@ -50,105 +52,153 @@ if ($search) {
     $params[] = "%$search%";
     $params[] = "%$search%";
 }
-if ($status_filter) {
+if ($status_filter !== 'all') {
     $query .= " AND a.overall_status = ?";
     $params[] = $status_filter;
 }
-$query .= " ORDER BY a.is_emergency DESC, a.created_at DESC LIMIT 50";
+$query .= " ORDER BY a.is_emergency DESC, a.created_at DESC";
 
 $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $applications = $stmt->fetchAll();
+
+$page_title = 'Overview';
+$active_tab = 'dashboard';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
-<div class="mb-6">
-    <h1 class="card-title text-2xl">Overview</h1>
-    <p class="text-muted">Global metrics, search, and clearance management.</p>
-</div>
+<div class="space-y-6 animate-fade-in" style="max-width: 64rem; display: flex; flex-direction: column; gap: 1.5rem;">
+    <div class="flex flex-wrap justify-between gap-3 items-end">
+        <div>
+            <h1 class="text-2xl font-semibold">Overview</h1>
+            <p class="text-sm text-muted">Global metrics, dues, and clearance management.</p>
+        </div>
+        <button class="btn btn-outline inline-flex" style="height: 2.25rem; font-size: 0.875rem;" onclick="window.print()">
+            <i data-lucide="download" style="width: 16px; height: 16px; margin-right: 0.375rem;"></i> Export Report
+        </button>
+    </div>
 
-<div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-    <div class="card" style="padding: 1.5rem;">
-        <div class="flex items-center gap-4">
-            <div style="background-color: var(--surface-2); padding: 0.75rem; border-radius: var(--radius-md);">
-                <i data-lucide="users" style="width: 24px; height: 24px; color: var(--foreground);"></i>
+    <!-- Stats Row -->
+    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+        <div class="card" style="flex: 1 1 180px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--secondary); color: var(--foreground);">
+                <i data-lucide="users" style="width: 16px; height: 16px;"></i>
             </div>
-            <div>
-                <p class="text-sm font-medium text-muted mb-1">Total applications</p>
-                <h3 class="text-2xl font-bold"><?php echo $total_apps; ?></h3>
-            </div>
-        </div>
-    </div>
-    <div class="card" style="padding: 1.5rem;">
-        <div class="flex items-center gap-4">
-            <div style="background-color: var(--status-approved-bg); padding: 0.75rem; border-radius: var(--radius-md);">
-                <i data-lucide="file-check-2" style="width: 24px; height: 24px; color: var(--status-approved);"></i>
-            </div>
-            <div>
-                <p class="text-sm font-medium text-muted mb-1">Completion rate</p>
-                <h3 class="text-2xl font-bold"><?php echo $completion_rate; ?>%</h3>
+            <div style="min-width: 0;">
+                <div class="text-xs text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Total applications</div>
+                <div class="text-xl font-semibold" style="font-feature-settings: 'tnum';"><?php echo $total_apps; ?></div>
             </div>
         </div>
-    </div>
-    <div class="card" style="padding: 1.5rem;">
-        <div class="flex items-center gap-4">
-            <div style="background-color: color-mix(in srgb, var(--status-pending) 15%, transparent); padding: 0.75rem; border-radius: var(--radius-md);">
-                <i data-lucide="clock" style="width: 24px; height: 24px; color: var(--status-pending);"></i>
+        
+        <div class="card" style="flex: 1 1 180px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--secondary); color: var(--foreground);">
+                <i data-lucide="file-check-2" style="width: 16px; height: 16px;"></i>
             </div>
-            <div>
-                <p class="text-sm font-medium text-muted mb-1">In progress</p>
-                <h3 class="text-2xl font-bold"><?php echo $in_progress; ?></h3>
-            </div>
-        </div>
-    </div>
-    <div class="card" style="padding: 1.5rem;">
-        <div class="flex items-center gap-4">
-            <div style="background-color: var(--destructive-foreground); padding: 0.75rem; border-radius: var(--radius-md);">
-                <i data-lucide="triangle-alert" style="width: 24px; height: 24px; color: var(--destructive);"></i>
-            </div>
-            <div>
-                <p class="text-sm font-medium text-muted mb-1">Action required</p>
-                <h3 class="text-2xl font-bold"><?php echo $action_required; ?></h3>
+            <div style="min-width: 0;">
+                <div class="text-xs text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Completion rate</div>
+                <div class="text-xl font-semibold" style="font-feature-settings: 'tnum';"><?php echo $completion_rate; ?>%</div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="grid" style="grid-template-columns: 2fr 1fr; gap: 2rem;">
-    <!-- Applications Panel -->
-    <div class="card">
-        <div class="card-header border-b border-border flex items-center justify-between" style="padding-bottom: 1rem;">
-            <h2 class="card-title text-lg">Applications</h2>
-            <form action="dashboard.php" method="GET" class="flex gap-2">
-                <input type="hidden" name="status" value="<?php echo htmlspecialchars($status_filter); ?>">
-                <div style="position: relative;">
-                    <i data-lucide="search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted-foreground);"></i>
-                    <input type="text" name="search" class="input" placeholder="Search..." value="<?php echo htmlspecialchars($search); ?>" style="padding-left: 2.25rem; height: 2rem;">
-                </div>
-                <select name="status" class="input" style="height: 2rem; padding: 0 0.5rem;" onchange="this.form.submit()">
-                    <option value="">All statuses</option>
-                    <option value="in_progress" <?php echo $status_filter === 'in_progress' ? 'selected' : ''; ?>>In Progress</option>
-                    <option value="action_required" <?php echo $status_filter === 'action_required' ? 'selected' : ''; ?>>Action Required</option>
-                    <option value="completed" <?php echo $status_filter === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                </select>
-                <?php if ($search || $status_filter): ?>
-                    <a href="dashboard.php" class="btn btn-ghost" style="height: 2rem; padding: 0 0.5rem;">Clear</a>
+        <div class="card" style="flex: 1 1 180px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--secondary); color: var(--foreground);">
+                <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+            </div>
+            <div style="min-width: 0;">
+                <div class="text-xs text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">In progress</div>
+                <div class="text-xl font-semibold" style="font-feature-settings: 'tnum';"><?php echo $in_progress; ?></div>
+            </div>
+        </div>
+
+        <div class="card" style="flex: 1 1 180px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--status-denied-bg); color: var(--status-denied);">
+                <i data-lucide="alert-triangle" style="width: 16px; height: 16px;"></i>
+            </div>
+            <div style="min-width: 0;">
+                <div class="text-xs text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Action required</div>
+                <div class="text-xl font-semibold" style="font-feature-settings: 'tnum';"><?php echo $action_required; ?></div>
+            </div>
+        </div>
+
+        <div class="card" style="flex: 1 1 180px; padding: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--status-denied-bg); color: var(--status-denied);">
+                <i data-lucide="wallet" style="width: 16px; height: 16px;"></i>
+            </div>
+            <div style="min-width: 0;">
+                <div class="text-xs text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Total Dues</div>
+                <div class="text-xl font-semibold" style="font-feature-settings: 'tnum';">৳<?php echo number_format($total_due_amount); ?></div>
+                <div style="font-size: 10px; color: var(--muted-foreground);"><?php echo $total_due_count; ?> items</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+        <!-- Bottlenecks Card -->
+        <div class="card flex-col">
+            <div class="card-header border-b border-border" style="padding: 1.25rem;">
+                <h3 class="card-title text-base">Department bottlenecks</h3>
+                <p class="text-xs text-muted mt-1">Where pending requests pile up.</p>
+            </div>
+            <div class="card-content" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <?php if (count($bottlenecks) === 0): ?>
+                    <div class="flex items-center gap-2 text-sm" style="color: var(--status-approved); background: var(--status-approved-bg); border-radius: var(--radius-md); padding: 0.5rem;">
+                        <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> All clear — no pending requests anywhere.
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($bottlenecks as $b): ?>
+                        <div class="flex items-center justify-between text-sm" style="border: 1px solid var(--border); background: var(--surface-1); border-radius: var(--radius-md); padding: 0.5rem 0.75rem;">
+                            <span><?php echo htmlspecialchars($b['name']); ?></span>
+                            <span class="font-medium" style="font-feature-settings: 'tnum';"><?php echo $b['pending_count']; ?> pending</span>
+                        </div>
+                    <?php endforeach; ?>
                 <?php endif; ?>
-            </form>
+            </div>
         </div>
-        <div class="card-content" style="padding: 0;">
+    </div>
+
+    <!-- Applications List -->
+    <div class="card">
+        <div class="card-header" style="padding: 1.25rem;">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+                <h3 class="card-title text-base">Applications</h3>
+                <form action="dashboard.php" method="GET" class="flex gap-2">
+                    <div style="position: relative;">
+                        <i data-lucide="search" style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted-foreground);"></i>
+                        <input type="text" name="search" class="input" placeholder="Search name, email..." value="<?php echo htmlspecialchars($search); ?>" style="padding-left: 2rem; width: 16rem;">
+                    </div>
+                    <select name="status" class="select" onchange="this.form.submit()" style="width: 10rem;">
+                        <option value="all" <?php echo $status_filter === 'all' ? 'selected' : ''; ?>>All statuses</option>
+                        <option value="in_progress" <?php echo $status_filter === 'in_progress' ? 'selected' : ''; ?>>In Progress</option>
+                        <option value="action_required" <?php echo $status_filter === 'action_required' ? 'selected' : ''; ?>>Action Required</option>
+                        <option value="completed" <?php echo $status_filter === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                    </select>
+                </form>
+            </div>
+        </div>
+        <div class="card-content" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem;">
             <?php if (count($applications) === 0): ?>
-                <div class="text-center py-8 text-muted">No applications found.</div>
+                <div class="text-center" style="padding: 3rem 1rem;">
+                    <i data-lucide="<?php echo $search || $status_filter !== 'all' ? 'search' : 'inbox'; ?>" style="width: 48px; height: 48px; margin: 0 auto 1rem; color: var(--muted-foreground); opacity: 0.5;"></i>
+                    <h3 class="text-lg font-medium"><?php echo $search || $status_filter !== 'all' ? 'No applications match your filter' : 'No applications yet'; ?></h3>
+                    <p class="text-sm text-muted mt-1"><?php echo $search || $status_filter !== 'all' ? 'Try clearing the search or changing the status filter.' : 'Once students submit applications, they will appear here.'; ?></p>
+                    <?php if ($search || $status_filter !== 'all'): ?>
+                        <a href="dashboard.php" class="btn btn-outline mt-4 inline-flex">Reset filters</a>
+                    <?php endif; ?>
+                </div>
             <?php else: ?>
                 <?php foreach ($applications as $app): ?>
-                    <a href="student-details.php?id=<?php echo $app['user_id']; ?>" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; transition: background-color 0.2s;">
-                        <div>
-                            <div class="font-semibold flex items-center gap-2 mb-1">
-                                <?php echo htmlspecialchars($app['full_name']); ?>
+                    <a href="student-details.php?id=<?php echo $app['user_id']; ?>" class="flex flex-wrap items-center justify-between gap-3" style="display: flex; text-decoration: none; border: 1px solid var(--border); background: var(--surface-1); border-radius: var(--radius-lg); padding: 0.75rem; transition: background 0.2s;" onmouseover="this.style.background='var(--secondary)'" onmouseout="this.style.background='var(--surface-1)'">
+                        <div style="min-width: 0;">
+                            <div class="font-medium text-sm flex items-center gap-2 mb-0.5" style="color: var(--foreground);">
+                                <?php echo htmlspecialchars($app['full_name'] ?: 'Student'); ?>
                                 <?php if ($app['is_emergency']): ?>
                                     <span class="status-badge status-emergency" style="font-size: 0.65rem; padding: 0.125rem 0.375rem;">Urgent</span>
                                 <?php endif; ?>
                             </div>
-                            <div class="text-sm text-muted"><?php echo htmlspecialchars($app['course'] . ' · ' . $app['batch']); ?> · <?php echo htmlspecialchars($app['email']); ?></div>
+                            <div class="text-xs text-muted" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                <?php echo htmlspecialchars($app['course']); ?> · <?php echo htmlspecialchars($app['batch']); ?> · <?php echo htmlspecialchars($app['email']); ?>
+                            </div>
                         </div>
                         <div>
                             <?php if ($app['overall_status'] === 'completed'): ?>
@@ -162,28 +212,6 @@ $applications = $stmt->fetchAll();
                     </a>
                 <?php endforeach; ?>
             <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- Bottlenecks Panel -->
-    <div class="flex-col gap-4">
-        <div class="card">
-            <div class="card-header border-b border-border" style="padding-bottom: 1rem;">
-                <h2 class="card-title text-lg">Department bottlenecks</h2>
-                <p class="card-description">Where pending requests pile up.</p>
-            </div>
-            <div class="card-content flex-col gap-2" style="padding-top: 1rem;">
-                <?php if (count($bottlenecks) === 0): ?>
-                    <div class="text-sm text-muted">No pending bottlenecks.</div>
-                <?php else: ?>
-                    <?php foreach ($bottlenecks as $b): ?>
-                        <div class="flex items-center justify-between" style="padding: 0.5rem 0; border-bottom: 1px dashed var(--border);">
-                            <span class="font-medium text-sm"><?php echo htmlspecialchars($b['name']); ?></span>
-                            <span class="font-semibold text-sm" style="background: var(--surface-2); padding: 0.125rem 0.5rem; border-radius: 9999px;"><?php echo $b['pending_count']; ?></span>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
         </div>
     </div>
 </div>

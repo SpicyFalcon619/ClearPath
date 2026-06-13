@@ -30,14 +30,25 @@ $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();
 
 // Fetch active application
-$stmt = $pdo->prepare("SELECT id, created_at, overall_status, is_emergency FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
-$stmt->execute([$_SESSION['user_id']]);
-$application = $stmt->fetch();
+$is_historical_view = false;
+if (isset($_GET['view_id'])) {
+    $stmt = $pdo->prepare("SELECT id, created_at, overall_status, is_emergency, course, batch FROM applications WHERE user_id = ? AND id = ?");
+    $stmt->execute([$_SESSION['user_id'], (int)$_GET['view_id']]);
+    $application = $stmt->fetch();
+    $is_historical_view = $application !== false;
+}
+
+if (!isset($application) || !$application) {
+    $stmt = $pdo->prepare("SELECT id, created_at, overall_status, is_emergency, course, batch FROM applications WHERE user_id = ? ORDER BY created_at DESC LIMIT 1");
+    $stmt->execute([$_SESSION['user_id']]);
+    $application = $stmt->fetch();
+    $is_historical_view = false;
+}
 
 // Fetch previous applications
 $previous_applications = [];
 if ($application) {
-    $stmt = $pdo->prepare("SELECT id, created_at, overall_status FROM applications WHERE user_id = ? AND id != ? ORDER BY created_at DESC");
+    $stmt = $pdo->prepare("SELECT id, created_at, overall_status, course, batch FROM applications WHERE user_id = ? AND id != ? ORDER BY created_at DESC");
     $stmt->execute([$_SESSION['user_id'], $application['id']]);
     $previous_applications = $stmt->fetchAll();
 }
@@ -69,7 +80,7 @@ if ($application) {
     $days_left = max(0, (strtotime($application['created_at'] . ' + 20 days') - time()) / (60 * 60 * 24));
     
     $stmt = $pdo->prepare("
-        SELECT ds.id as ds_id, ds.status, ds.comments, d.id as dept_id, d.name 
+        SELECT ds.id as ds_id, ds.status, ds.comments, ds.unread_student_updates, d.id as dept_id, d.name 
         FROM department_status ds
         JOIN departments d ON ds.department_id = d.id
         WHERE ds.application_id = ?
@@ -113,11 +124,21 @@ require_once __DIR__ . '/../includes/header.php';
 
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="card-title text-2xl">Your Clearance</h1>
-        <p class="text-muted">Track approvals across departments and download your certificate.</p>
+        <?php if ($is_historical_view): ?>
+            <div style="margin-bottom: 0.5rem;">
+                <a href="dashboard.php" class="text-sm font-medium" style="color: var(--primary); display: inline-flex; align-items: center; gap: 0.25rem;">
+                    <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i> Back to Active Dashboard
+                </a>
+            </div>
+            <h1 class="card-title text-2xl">Historical Application</h1>
+            <p class="text-muted">Viewing details of a past clearance application.</p>
+        <?php else: ?>
+            <h1 class="card-title text-2xl">Your Clearance</h1>
+            <p class="text-muted">Track approvals across departments and download your certificate.</p>
+        <?php endif; ?>
     </div>
     <div style="text-align: right;">
-        <?php if (!$application): ?>
+        <?php if (!$application || $application['overall_status'] === 'completed'): ?>
             <a href="apply.php" class="btn btn-primary">
                 <i data-lucide="plus" style="width: 16px; height: 16px;"></i> New Application
             </a>
@@ -139,7 +160,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <i data-lucide="wallet"></i>
                 </div>
                 <div>
-                    <h3 style="margin-bottom: 0.25rem; font-weight: 600; color: var(--status-emergency);">You have <?php echo count(array_filter($clearance_items, fn($i) => $i['status'] === 'outstanding')); ?> pending item(s) to clear</h3>
+                    <h3 style="margin-bottom: 0.25rem; font-weight: 600; color: var(--status-emergency);">You have <?php echo count(array_filter($all_items, fn($i) => $i['status'] === 'outstanding')); ?> pending item(s) to clear</h3>
                     <p class="text-sm" style="color: color-mix(in srgb, var(--status-emergency) 70%, black);">Total amount due: <strong>$<?php echo number_format($outstanding_amount, 2); ?></strong>. Please visit the respective departments to clear your dues.</p>
                 </div>
             </div>
@@ -149,7 +170,7 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="card mb-6">
         <div class="card-header" style="flex-direction: row; justify-content: space-between; align-items: flex-start;">
             <div>
-                <h2 class="card-title mb-2"><?php echo htmlspecialchars($user['course'] . ' · ' . $user['batch']); ?></h2>
+                <h2 class="card-title mb-2"><?php echo htmlspecialchars(($application['course'] ?? $user['course']) . ' · ' . ($application['batch'] ?? $user['batch'])); ?></h2>
                 <p class="text-sm text-muted">Submitted <?php echo date('M d, Y', strtotime($application['created_at'])); ?></p>
             </div>
             <div class="flex items-center gap-2">
@@ -176,21 +197,54 @@ require_once __DIR__ . '/../includes/header.php';
                 <div style="height: 100%; background: var(--gradient-primary); width: <?php echo $progress_percent; ?>%; transition: width 0.5s ease-in-out;"></div>
             </div>
 
-            <!-- Target completion -->
-            <div style="background-color: var(--surface-2); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem;">
-                <i data-lucide="calendar" style="width: 16px; height: 16px; color: var(--muted-foreground);"></i>
-                <span class="text-sm"><strong>Target completion:</strong> <?php echo $target_date; ?> &middot; <?php echo floor($days_left); ?> days left</span>
-            </div>
+            <!-- Target completion removed to match design -->
 
             <style>
                 .dept-card:hover {
                     border-color: var(--primary) !important;
                 }
             </style>
+
+
+            <h3 class="font-semibold text-sm mb-3">Departments</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <?php foreach ($departments as $dept): ?>
-                    <div style="border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem 1rem; display: flex; align-items: center; justify-content: space-between; background-color: var(--surface-1); cursor: pointer; transition: border-color 0.2s;" onclick="openModal('modal-<?php echo $dept['ds_id']; ?>')" class="dept-card">
-                        <span class="font-medium text-sm"><?php echo htmlspecialchars($dept['name']); ?></span>
+                    <div style="position: relative; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem 1rem; display: flex; align-items: center; justify-content: space-between; background-color: var(--surface-1); cursor: pointer; transition: border-color 0.2s;" onclick="
+                        if (this.querySelector('.red-dot')) {
+                            this.querySelector('.red-dot').style.display = 'none';
+                            fetch('/clearpath/api/mark_dept_updates_read.php', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                                body: 'ds_id=<?php echo $dept['ds_id']; ?>'
+                            });
+                        }
+                        openModal('modal-<?php echo $dept['ds_id']; ?>');
+                    " class="dept-card">
+                        <?php if ($dept['unread_student_updates']): ?>
+                            <div class="red-dot" style="position: absolute; top: -4px; right: -4px; width: 12px; height: 12px; background-color: var(--destructive); border-radius: 50%; border: 2px solid var(--surface-1);"></div>
+                        <?php endif; ?>
+                        
+                        <div class="flex flex-col gap-1">
+                            <?php
+                                $dept_items = array_filter($clearance_items[$dept['dept_id']] ?? [], fn($i) => $i['status'] === 'outstanding');
+                                $dept_due = array_sum(array_column($dept_items, 'amount'));
+                            ?>
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-sm"><?php echo htmlspecialchars($dept['name']); ?></span>
+                                <?php if (count($dept_items) > 0): ?>
+                                    <span style="background: var(--surface-2); padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; color: var(--foreground);"><?php echo count($dept_items); ?> pending</span>
+                                <?php endif; ?>
+                            </div>
+                            <?php if ($dept_due > 0): ?>
+                                <span class="text-xs" style="color: var(--status-emergency); font-weight: bold;">BDT <?php echo number_format($dept_due); ?> due for <?php echo count($dept_items); ?> item(s)</span>
+                            <?php endif; ?>
+                            <?php if (!empty($dept['comments'])): ?>
+                                <div class="flex items-center gap-1 text-xs text-muted mt-1">
+                                    <i data-lucide="flag" style="width: 12px; height: 12px;"></i>
+                                    <span><?php echo htmlspecialchars($dept['comments']); ?></span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
                         <div class="flex items-center gap-3">
                             <?php if ($dept['status'] === 'approved'): ?>
                                 <span class="status-badge status-approved"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Approved</span>
@@ -207,8 +261,10 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div class="card-footer justify-between">
-            <?php if ($progress_percent === 100): ?>
-                <span class="text-sm font-medium" style="color: var(--primary);">Clearance complete! You can now download your certificate.</span>
+            <?php if ($application['overall_status'] === 'completed'): ?>
+                <div class="flex items-center gap-2" style="color: var(--status-approved);">
+                    <span class="text-sm font-medium">Clearance completed</span>
+                </div>
                 <a href="certificate.php?id=<?php echo $application['id']; ?>" class="btn btn-primary">
                     <i data-lucide="download" style="width: 16px; height: 16px;"></i> Download Certificate
                 </a>
@@ -221,34 +277,38 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
     
-    <?php if (count($previous_applications) > 0): ?>
+    <?php if (count($previous_applications) > 0 && !$is_historical_view): ?>
         <div class="mt-6">
             <h3 class="text-sm font-medium text-muted mb-4">Previous applications</h3>
             <?php foreach ($previous_applications as $prev): ?>
-                <div class="card mb-2" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div class="font-medium text-sm"><?php echo htmlspecialchars($user['course'] . ' · ' . $user['batch']); ?></div>
-                        <div class="text-xs text-muted"><?php echo date('M d, Y', strtotime($prev['created_at'])); ?></div>
+                <a href="dashboard.php?view_id=<?php echo $prev['id']; ?>" style="text-decoration: none; color: inherit; display: block;">
+                    <div class="card mb-2" style="padding: 1rem; display: flex; justify-content: space-between; align-items: center; transition: border-color 0.2s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
+                        <div>
+                            <div class="font-medium text-sm"><?php echo htmlspecialchars(($prev['course'] ?? $user['course']) . ' · ' . ($prev['batch'] ?? $user['batch'])); ?></div>
+                            <div class="text-xs text-muted"><?php echo date('M d, Y', strtotime($prev['created_at'])); ?></div>
+                        </div>
+                        <?php if ($prev['overall_status'] === 'completed'): ?>
+                            <span class="status-badge status-approved"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Completed</span>
+                        <?php elseif ($prev['overall_status'] === 'action_required'): ?>
+                            <span class="status-badge status-denied"><i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i> Action Required</span>
+                        <?php else: ?>
+                            <span class="status-badge status-pending"><i data-lucide="clock" style="width: 12px; height: 12px;"></i> In Progress</span>
+                        <?php endif; ?>
                     </div>
-                    <?php if ($prev['overall_status'] === 'completed'): ?>
-                        <span class="status-badge status-approved"><i data-lucide="check-circle" style="width: 12px; height: 12px;"></i> Completed</span>
-                    <?php elseif ($prev['overall_status'] === 'action_required'): ?>
-                        <span class="status-badge status-denied"><i data-lucide="alert-circle" style="width: 12px; height: 12px;"></i> Action Required</span>
-                    <?php else: ?>
-                        <span class="status-badge status-pending"><i data-lucide="clock" style="width: 12px; height: 12px;"></i> In Progress</span>
-                    <?php endif; ?>
-                </div>
+                </a>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
 <?php else: ?>
     <!-- Empty State -->
-    <div class="card" style="text-align: center; padding: 4rem 1.5rem; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <i data-lucide="file-x" style="width: 48px; height: 48px; color: var(--muted-foreground); margin-bottom: 1rem;"></i>
-        <h2 class="card-title mb-2">No active application</h2>
-        <p class="card-description mb-6">You haven't started a clearance application yet.</p>
-        <a href="apply.php" class="btn btn-primary">
+    <div class="card" style="text-align: center; padding: 5rem 2rem; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px dashed var(--border); background-color: transparent; box-shadow: none;">
+        <div style="background-color: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--primary); width: 64px; height: 64px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+            <i data-lucide="file-text" style="width: 28px; height: 28px; stroke-width: 2px;"></i>
+        </div>
+        <h2 class="card-title mb-2" style="font-size: 1.25rem;">No applications yet</h2>
+        <p class="card-description mb-6" style="max-width: 400px; line-height: 1.5;">Start your clearance process by submitting a new application — we'll guide you through every department.</p>
+        <a href="apply.php" class="btn btn-primary" style="padding: 0 1.25rem;">
             <i data-lucide="plus" style="width: 16px; height: 16px;"></i> Start Application
         </a>
     </div>
@@ -279,8 +339,25 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php else: ?>
                         <div class="flex-col gap-2 mb-6">
                             <?php foreach ($dept_items as $item): ?>
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2);">
-                                    <span class="text-sm font-medium"><?php echo htmlspecialchars($item['title']); ?></span>
+                                <?php
+                                    $bg_color = 'var(--surface-2)';
+                                    $opacity = '1';
+                                    $text_style = '';
+                                    if ($item['status'] === 'cleared' || $item['status'] === 'waived') {
+                                        $bg_color = 'var(--background)';
+                                        $opacity = '0.6';
+                                        $text_style = 'text-decoration: line-through; color: var(--muted-foreground);';
+                                    }
+                                ?>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: <?php echo $bg_color; ?>; opacity: <?php echo $opacity; ?>;">
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <span class="text-sm font-medium" style="<?php echo $text_style; ?>"><?php echo htmlspecialchars($item['title']); ?></span>
+                                        <?php if ($item['status'] === 'cleared'): ?>
+                                            <span style="font-size: 0.65rem; font-weight: 600; color: var(--status-approved); background: var(--status-approved-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">CLEARED</span>
+                                        <?php elseif ($item['status'] === 'waived'): ?>
+                                            <span style="font-size: 0.65rem; font-weight: 600; color: var(--status-pending); background: var(--status-pending-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">WAIVED</span>
+                                        <?php endif; ?>
+                                    </div>
                                     <span class="text-sm" style="color: var(--status-emergency); font-weight: 600;">$<?php echo number_format($item['amount'], 2); ?></span>
                                 </div>
                             <?php endforeach; ?>

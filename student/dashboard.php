@@ -56,8 +56,8 @@ if ($application) {
 // Fetch clearance items (dues/fines)
 $clearance_items = [];
 $outstanding_amount = 0;
-$stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ?");
-$stmt->execute([$_SESSION['user_id']]);
+$stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE application_id = ?");
+$stmt->execute([$application['id']]);
 $all_items = $stmt->fetchAll();
 
 foreach ($all_items as $item) {
@@ -333,14 +333,31 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
                 
                 <div style="padding: 1.5rem;">
-                    <h4 class="font-medium text-sm mb-2">Pending Requirements</h4>
+                    <div class="mb-4">
+                        <div class="text-sm font-medium">Dues & obligations</div>
+                        <?php
+                            $total_due = 0;
+                            foreach($dept_items as $i) { if($i['status'] === 'outstanding') $total_due += $i['amount']; }
+                        ?>
+                        <div class="text-xs text-muted" style="margin-top: 0.125rem;">
+                            <?php echo count($dept_items); ?> items <?php if($total_due > 0) echo '· BDT ' . number_format($total_due, 0) . ' due'; ?>
+                        </div>
+                    </div>
                     <?php if (count($dept_items) === 0): ?>
                         <p class="text-sm text-muted italic mb-6">Nothing pending from this department.</p>
                     <?php else: ?>
-                        <div class="flex-col gap-2 mb-6">
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
                             <?php foreach ($dept_items as $item): ?>
                                 <?php
-                                    $bg_color = 'var(--surface-2)';
+                                    $icon = 'circle-dot';
+                                    if (isset($item['kind'])) {
+                                        if ($item['kind'] === 'fee') $icon = 'banknote';
+                                        if ($item['kind'] === 'book') $icon = 'book';
+                                        if ($item['kind'] === 'equipment') $icon = 'wrench';
+                                        if ($item['kind'] === 'document') $icon = 'file-text';
+                                    }
+                                    
+                                    $bg_color = 'var(--surface-1)';
                                     $opacity = '1';
                                     $text_style = '';
                                     if ($item['status'] === 'cleared' || $item['status'] === 'waived') {
@@ -349,25 +366,44 @@ require_once __DIR__ . '/../includes/header.php';
                                         $text_style = 'text-decoration: line-through; color: var(--muted-foreground);';
                                     }
                                 ?>
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-md); background: <?php echo $bg_color; ?>; opacity: <?php echo $opacity; ?>;">
-                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                        <span class="text-sm font-medium" style="<?php echo $text_style; ?>"><?php echo htmlspecialchars($item['title']); ?></span>
-                                        <?php if ($item['status'] === 'cleared'): ?>
-                                            <span style="font-size: 0.65rem; font-weight: 600; color: var(--status-approved); background: var(--status-approved-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">CLEARED</span>
-                                        <?php elseif ($item['status'] === 'waived'): ?>
-                                            <span style="font-size: 0.65rem; font-weight: 600; color: var(--status-pending); background: var(--status-pending-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">WAIVED</span>
-                                        <?php endif; ?>
+                                <div class="flex items-center justify-between" style="padding: 0.5rem 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border); background: <?php echo $bg_color; ?>; opacity: <?php echo $opacity; ?>; transition: all 0.2s;">
+                                    <div class="flex items-start gap-3">
+                                        <i data-lucide="<?php echo $icon; ?>" style="width: 14px; height: 14px; color: var(--muted-foreground); margin-right: 0.5rem; margin-top: 0.25rem;"></i>
+                                        <div class="flex flex-col">
+                                            <div class="flex items-center gap-2">
+                                                <div class="text-sm font-medium" style="<?php echo $text_style; ?>">
+                                                    <?php echo htmlspecialchars($item['title']); ?>
+                                                </div>
+                                                <?php if ($item['status'] === 'cleared'): ?>
+                                                    <div style="font-size: 0.65rem; font-weight: 600; color: var(--status-approved); background: var(--status-approved-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">CLEARED</div>
+                                                <?php elseif ($item['status'] === 'waived'): ?>
+                                                    <div style="font-size: 0.65rem; font-weight: 600; color: var(--status-pending); background: var(--status-pending-bg); padding: 0.125rem 0.375rem; border-radius: 9999px;">WAIVED</div>
+                                                <?php endif; ?>
+                                                <?php if ($item['amount'] > 0): ?>
+                                                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--status-emergency); background: var(--status-emergency-bg); border: 1px solid color-mix(in srgb, var(--status-emergency) 30%, transparent); padding: 0.125rem 0.5rem; border-radius: 9999px;">
+                                                        BDT <?php echo number_format($item['amount'], 0); ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php if (!empty($item['description'])): ?>
+                                                <div class="text-xs text-muted mt-1"><?php echo htmlspecialchars($item['description']); ?></div>
+                                            <?php endif; ?>
+                                            <?php if (!empty($item['due_date'])): ?>
+                                                <div class="text-xs text-muted" style="margin-top: 0.125rem;">Due: <?php echo date('M d, Y', strtotime($item['due_date'])); ?></div>
+                                            <?php endif; ?>
+                                        </div>
                                     </div>
-                                    <span class="text-sm" style="color: var(--status-emergency); font-weight: 600;">$<?php echo number_format($item['amount'], 2); ?></span>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
 
-                    <h4 class="font-medium text-sm mb-2" style="display: flex; align-items: center; gap: 0.5rem;"><i data-lucide="message-square" style="width: 14px; height: 14px;"></i> Messages</h4>
-                    <div id="chat-<?php echo $dept['ds_id']; ?>" style="background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1rem; max-height: 300px; overflow-y: auto;">
+                    <div class="text-sm font-medium mb-3 flex items-center gap-2" style="margin-top: 2.5rem;">
+                        <i data-lucide="message-square" style="width: 16px; height: 16px;"></i> Messages
+                    </div>
+                    <div id="chat-<?php echo $dept['ds_id']; ?>" style="border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-1); padding: 1rem; margin-bottom: 1rem; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem;">
                         <?php if (count($dept_messages) === 0): ?>
-                            <p class="text-sm text-muted text-center italic py-4">No messages yet — start the conversation.</p>
+                            <div class="text-center text-sm text-muted py-4">No messages yet. Send a message to start the conversation.</div>
                         <?php else: ?>
                             <?php foreach ($dept_messages as $msg): ?>
                                 <?php $is_me = $msg['sender_id'] == $_SESSION['user_id']; ?>
@@ -375,21 +411,31 @@ require_once __DIR__ . '/../includes/header.php';
                                     <?php if (!$is_me): ?>
                                         <span class="text-xs text-muted mb-1 ml-1"><?php echo htmlspecialchars($msg['full_name']); ?></span>
                                     <?php endif; ?>
-                                    <div style="padding: 0.75rem 1rem; border-radius: 1rem; font-size: 0.875rem; <?php echo $is_me ? 'background: var(--primary); color: white; border-bottom-right-radius: 0.25rem;' : 'background-color: var(--surface-1); border: 1px solid var(--border); border-bottom-left-radius: 0.25rem;'; ?>">
+                                    <div style="padding: 0.5rem 0.75rem; border-radius: 0.75rem; font-size: 0.8rem; <?php echo $is_me ? 'background: var(--primary); color: white; border-bottom-right-radius: 0.25rem;' : 'background-color: white; border: 1px solid var(--border); border-bottom-left-radius: 0.25rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);'; ?>">
                                         <?php echo nl2br(htmlspecialchars($msg['message'])); ?>
+                                        <div style="font-size: 0.65rem; margin-top: 0.5rem; <?php echo $is_me ? 'color: rgba(255,255,255,0.8);' : 'color: var(--muted-foreground);'; ?>">
+                                            <?php 
+                                                $diff = time() - strtotime($msg['created_at']);
+                                                if ($diff < 60) echo 'just now';
+                                                elseif ($diff < 3600) echo floor($diff/60) . ' minutes ago';
+                                                elseif ($diff < 86400) echo 'about ' . floor($diff/3600) . ' hours ago';
+                                                else echo date('M d, g:i A', strtotime($msg['created_at']));
+                                            ?>
+                                        </div>
                                     </div>
-                                    <span class="text-xs text-muted mt-1 <?php echo $is_me ? 'text-right mr-1' : 'ml-1'; ?>"><?php echo date('g:i A', strtotime($msg['created_at'])); ?></span>
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
 
                     <!-- Message Input -->
-                    <form onsubmit="submitStudentMessage(event, this, 'chat-<?php echo $dept['ds_id']; ?>')" style="display: flex; gap: 0.75rem; border: 2px solid var(--primary); border-radius: 9999px; padding: 0.5rem 0.5rem 0.5rem 1.25rem; align-items: center; background: var(--surface-1);">
+                    <form onsubmit="submitStudentMessage(event, this, 'chat-<?php echo $dept['ds_id']; ?>')" class="flex items-center gap-2 mb-4">
                         <input type="hidden" name="ds_id" value="<?php echo $dept['ds_id']; ?>">
-                        <input type="text" name="message_text" placeholder="Write a message..." required style="flex: 1; border: none; outline: none; background: transparent; font-size: 0.95rem; padding: 0.25rem 0;">
-                        <button type="submit" name="action" value="send_message" class="btn btn-primary" style="border-radius: 50%; width: 2.5rem; height: 2.5rem; padding: 0; display: flex; align-items: center; justify-content: center;">
-                            <i data-lucide="send" style="width: 16px; height: 16px; margin: 0; position: relative; right: 1px;"></i>
+                        <div style="flex: 1; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.5rem; background: white; display: flex; align-items: center;">
+                            <input type="text" name="message_text" placeholder="Write a message..." required style="flex: 1; border: none; outline: none; background: transparent; padding: 0.25rem; font-size: 0.8rem;" oninput="const btn = this.closest('form').querySelector('button[type=submit]'); if(this.value.trim() !== '') { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; } else { btn.disabled = true; btn.style.opacity = '0.5'; btn.style.cursor = 'not-allowed'; }">
+                        </div>
+                        <button type="submit" name="action" value="send_message" class="btn btn-primary" disabled style="border-radius: var(--radius-md); width: 2.75rem; height: 2.75rem; padding: 0; display: flex; align-items: center; justify-content: center; opacity: 0.5; cursor: not-allowed; transition: all 0.2s;">
+                            <i data-lucide="send" style="width: 16px; height: 16px; margin: 0;"></i>
                         </button>
                     </form>
                 </div>
@@ -401,12 +447,14 @@ require_once __DIR__ . '/../includes/header.php';
 <script>
     function openModal(id) {
         document.getElementById(id).style.display = 'flex';
+        document.body.style.overflow = 'hidden';
         // Scroll chat to bottom when modal opens
         const chatBox = document.querySelector('#' + id + ' [id^="chat-"]');
         if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
     }
     function closeModal(id) {
         document.getElementById(id).style.display = 'none';
+        document.body.style.overflow = '';
     }
     
     function submitStudentMessage(event, form, chatBoxId) {

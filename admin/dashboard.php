@@ -73,9 +73,6 @@ require_once __DIR__ . '/../includes/header.php';
             <h1 class="text-2xl font-semibold">Overview</h1>
             <p class="text-sm text-muted">Global metrics, dues, and clearance management.</p>
         </div>
-        <button class="btn btn-outline inline-flex" style="height: 2.25rem; font-size: 0.875rem;" onclick="window.print()">
-            <i data-lucide="download" style="width: 16px; height: 16px; margin-right: 0.375rem;"></i> Export Report
-        </button>
     </div>
 
     <!-- Stats Row -->

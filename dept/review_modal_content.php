@@ -36,8 +36,8 @@ if (!$app) {
 }
 
 // Fetch items
-$stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
-$stmt->execute([$app['student_user_id'], $admin['dept_id']]);
+$stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE application_id = ? AND department_id = ? ORDER BY created_at ASC");
+$stmt->execute([$app_id, $admin['dept_id']]);
 $items = $stmt->fetchAll();
 
 // Outstanding for logic checks
@@ -123,8 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmt->execute([$app['student_user_id'], $msg]);
                     
                     // Refresh items
-                    $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
-                    $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
+                    $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE application_id = ? AND department_id = ? ORDER BY created_at ASC");
+                    $stmt->execute([$app_id, $admin['dept_id']]);
                     $items = $stmt->fetchAll();
                     $outstanding_items = array_filter($items, fn($i) => $i['status'] === 'outstanding');
                 }
@@ -141,8 +141,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $stmt = $pdo->prepare("INSERT INTO notifications (user_id, message, link) VALUES (?, ?, '/clearpath/student/dashboard.php')");
                 $stmt->execute([$app['student_user_id'], $msg]);
                 // Refresh items
-                $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
-                $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
+                $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE application_id = ? AND department_id = ? ORDER BY created_at ASC");
+                $stmt->execute([$app_id, $admin['dept_id']]);
                 $items = $stmt->fetchAll();
                 $outstanding_items = array_filter($items, fn($i) => $i['status'] === 'outstanding');
             }
@@ -152,8 +152,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->execute([$item_id, $admin['dept_id']])) {
                 $success_msg = "Item deleted.";
                 // Refresh items
-                $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE user_id = ? AND department_id = ? ORDER BY created_at ASC");
-                $stmt->execute([$app['student_user_id'], $admin['dept_id']]);
+                $stmt = $pdo->prepare("SELECT * FROM clearance_items WHERE application_id = ? AND department_id = ? ORDER BY created_at ASC");
+                $stmt->execute([$app_id, $admin['dept_id']]);
                 $items = $stmt->fetchAll();
                 $outstanding_items = array_filter($items, fn($i) => $i['status'] === 'outstanding');
             }

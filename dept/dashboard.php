@@ -270,6 +270,7 @@ require_once __DIR__ . '/../includes/header.php';
         const content = document.getElementById('global-modal-content');
         
         modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
         content.innerHTML = '<div style="padding: 3rem; text-align: center; color: var(--muted-foreground);"><i data-lucide="loader-2" class="lucide-spin" style="width: 32px; height: 32px; margin: 0 auto 1rem auto;"></i><p>Loading...</p></div>';
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
@@ -291,6 +292,7 @@ require_once __DIR__ . '/../includes/header.php';
     function closeReviewModal() {
         document.getElementById('global-modal').style.display = 'none';
         document.getElementById('global-modal-content').innerHTML = '';
+        document.body.style.overflow = '';
     }
 
     function submitReviewModal(event, form) {

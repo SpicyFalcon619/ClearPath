@@ -1,0 +1,4 @@
+# Uploaded documents are data, never code: refuse to serve or run any script placed here.
+<FilesMatch "\.(php|phtml|phar|php[0-9]|pl|py|cgi|sh)$">
+    Require all denied
+</FilesMatch>

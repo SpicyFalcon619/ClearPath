@@ -31,10 +31,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         break;
                     }
                     
-                    $allowed_types = ['application/pdf', 'image/jpeg', 'image/png'];
+                    // The file type is read from the file's own bytes, never from the browser or the file name,
+                    // and the stored extension comes from this map, so a renamed script can't be saved as .php.
+                    $allowed_types = ['application/pdf' => 'pdf', 'image/jpeg' => 'jpg', 'image/png' => 'png'];
                     $max_size = 5 * 1024 * 1024; // 5MB
-                    
-                    if (!in_array($_FILES['documents']['type'][$i], $allowed_types)) {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $detected_type = $finfo->file($_FILES['documents']['tmp_name'][$i]);
+
+                    if (!isset($allowed_types[$detected_type]) || !is_uploaded_file($_FILES['documents']['tmp_name'][$i])) {
                         $error = "Invalid file type. Only PDF, JPG, and PNG are allowed.";
                         break;
                     } elseif ($_FILES['documents']['size'][$i] > $max_size) {
@@ -43,11 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } else {
                         $upload_dir = __DIR__ . '/../uploads/';
                         if (!is_dir($upload_dir)) {
-                            mkdir($upload_dir, 0777, true);
+                            mkdir($upload_dir, 0750, true);
                         }
-                        
-                        $file_ext = pathinfo($_FILES['documents']['name'][$i], PATHINFO_EXTENSION);
-                        $new_filename = uniqid('doc_') . '.' . $file_ext;
+
+                        $file_ext = $allowed_types[$detected_type];
+                        $new_filename = 'doc_' . bin2hex(random_bytes(16)) . '.' . $file_ext;
                         $destination = $upload_dir . $new_filename;
                         
                         if (move_uploaded_file($_FILES['documents']['tmp_name'][$i], $destination)) {

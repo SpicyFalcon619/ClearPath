@@ -13,3 +13,7 @@ Thumbs.db
 
 # Project specific
 .git/
+
+# user uploads are runtime data and may be personal documents
+uploads/*
+!uploads/.htaccess

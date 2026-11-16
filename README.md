@@ -1,72 +1,61 @@
 # ClearPath
 
-ClearPath is a comprehensive, full-stack University Clearance System designed to streamline the graduation and departure process for students. It provides a seamless, dynamic experience for students, department administrators, and master administrators.
+**A digital university clearance system.** Students apply for clearance and upload documents; each department reviews, messages and approves; and a PDF clearance certificate unlocks when every department has signed off. It replaces the paper form that has to be carried from office to office.
 
-## Overview
+Built with PHP and MySQL, without a framework, as a database-course project.
 
-The system eliminates paper-based clearance forms by digitizing the entire workflow. Students can track their clearance status in real-time, while department admins can efficiently manage queues, assign dues, and communicate directly with students.
+## Who uses it
 
-It features three distinct user portals:
-- **Student Portal**: Allows students to submit clearance applications, update their academic profile (course and batch), upload supporting documents, track departmental approvals in real-time, and download their final PDF Clearance Certificate.
-- **Department Admin Portal**: A streamlined dashboard for department-specific admins (e.g., Library, Finance, Labs) to review applications, communicate with students via built-in messaging, and approve or deny requests dynamically. Features bulk approval/denial capabilities.
-- **Master Admin Portal**: A high-level management dashboard for overseeing the entire system, adding new departments, managing user roles, and identifying clearance bottlenecks.
+| Role | What they do |
+|---|---|
+| **Student** | Fill in a profile once (course, batch), apply, upload supporting documents (PDF, JPG, PNG up to 5 MB), watch each department's decision in real time, chat with reviewers, and download the certificate |
+| **Department admin** | Review a queue for their department (Library, Hostel, Finance, Examination, Sports or Lab), record dues, message students, approve or deny one application or many at once |
+| **Master admin** | Add departments, assign roles, and see which departments are holding applications up |
 
-## Technologies Used
+## Features
 
-- **Backend**: PHP 8+ (Vanilla PHP)
-- **Database**: MySQL (PDO)
-- **Frontend Structure**: HTML5
-- **Styling**: Custom CSS design system using CSS Variables for theme consistency, ensuring a premium, sleek UI without heavy frameworks. Features modern aesthetics like glassmorphism and smooth micro-animations.
-- **Interactivity**: Vanilla JavaScript (Fetch API) for dynamic AJAX modals and real-time form submissions without page reloads.
-- **PDF Generation**: FPDF library for generating downloadable clearance certificates.
-- **Icons**: Lucide Icons.
+- **Per-department approval tracking** with a status for every department on every application
+- **Messaging and a notification bell** between students and reviewers, so a problem is settled inside the application
+- **Bulk approve or deny** for department queues
+- **Certificate generation:** a printable PDF (FPDF) appears only once every department has approved. [Sample certificate](Demo-Clearance-Certificate.pdf)
+- **Role-based access control** on every page and endpoint
+- **An audit log** of actions, and a profile that pre-fills future applications
 
-## Project Structure
+## Tech stack
 
-- `/admin` - Master administrator dashboard and user management logic.
-- `/dept` - Department administrator review queues, bulk actions, and AJAX modals.
-- `/student` - Student application workflows, progress tracking, and certificate generation.
-- `/auth` - Login, registration, and session initialization.
-- `/includes` - Shared components (header, footer), database configuration, authentication helpers, and course dropdown options.
-- `/api` - API endpoints for asynchronous JavaScript requests (e.g., messaging, notifications).
-- `/assets/css` - Global design system and layout stylesheets.
+PHP 8 with PDO (prepared statements) · MySQL · vanilla JavaScript with `fetch` for modals and messaging · FPDF · Lucide icons · a hand-written CSS design system with CSS variables.
 
-## Key Features
+## Run it locally
 
-- **AJAX-Powered Modals**: Instant, seamless review modals for admins to manage dues and chat with students without page reloads.
-- **Role-Based Access Control (RBAC)**: Secure routing and session management strictly separating Students, Department Admins, and Master Admins.
-- **Real-Time Messaging & Notifications**: Built-in chat system allowing students and admins to resolve discrepancies instantly, accompanied by a notification bell system.
-- **Dynamic Profile Auto-Fill**: Students can save their academic details in their profile, which automatically populates future clearance applications to save time.
-- **Dynamic Certificate Generation**: Automatically unlocks and generates a printable PDF certificate once all departments have approved the student's application.
-- **Bulk Actions**: Department admins can quickly select multiple students and approve or deny them in bulk.
+You need a PHP and MySQL stack such as [XAMPP](https://www.apachefriends.org/).
 
-## Setup Instructions
+1. Start **Apache** and **MySQL**.
+2. In phpMyAdmin, create a database named `clearpath_db` and import [`database.sql`](database.sql). It creates the tables and the six departments.
+3. Put this folder in `htdocs/clearpath` and check [`config.php`](config.php) (XAMPP's default is user `root`, empty password).
+4. Open `http://localhost/clearpath/` and register. **New accounts are students.**
+5. To try the admin side, promote an account in phpMyAdmin by setting `role` to `master_admin` (or `dept_admin` with a `department_id`) in the `users` table.
 
-1. **Prerequisites**: Install [XAMPP](https://www.apachefriends.org/) (or any similar LAMP/WAMP stack).
-2. **Database Setup**: 
-   - Open phpMyAdmin and create a database named `clearpath_db`.
-   - Import the `database.sql` file to set up the initial schema.
-3. **Application Configuration**:
-   - Ensure the database connection details in `config.php` and `includes/db.php` match your local setup (default is usually `root` with no password).
-4. **Seed Database**:
-   - Run the `reset_db.php` script (via command line `php reset_db.php` or by visiting it in the browser) to truncate tables and populate default test accounts.
+There are no seeded accounts and no default passwords.
 
-## Test Credentials
+## Project structure
 
-After running the database reset script, you can use the following accounts to test the application:
+```text
+auth/       login, sign-up, sessions
+student/    applications, progress tracking, certificate
+dept/       department queues, bulk actions, review modals
+admin/      master dashboard, departments and roles
+api/        JSON endpoints for messaging and notifications
+includes/   shared header and footer, database connection, auth helpers
+assets/     stylesheets
+uploads/    uploaded documents (never committed; scripts are blocked here)
+```
 
-**Master Admin**
-- Email: `admin@clearpath.edu`
-- Password: `admin`
+## Security notes
 
-**Student**
-- Email: `student@clearpath.edu`
-- Password: `student`
+- Uploads are checked by their real file content, stored under random names with a fixed extension, and `uploads/.htaccess` refuses to run scripts.
+- Passwords use `password_hash` / `password_verify`; queries use prepared statements.
+- Known gaps for a production deployment: no CSRF tokens yet and no session-ID regeneration on login.
 
-**Department Admins**
-- Library: `library@clearpath.edu` / `library`
-- Hostel: `hostel@clearpath.edu` / `hostel`
-- Finance: `finance@clearpath.edu` / `finance`
-- Examination: `examination@clearpath.edu` / `examination`
-- Sports: `sports@clearpath.edu` / `sports`
-- Lab: `lab@clearpath.edu` / `lab`
+## Author
+
+Ahmad Maruf Hossain ([@SpicyFalcon619](https://github.com/SpicyFalcon619)), United International University.
